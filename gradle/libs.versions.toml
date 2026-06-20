@@ -1,0 +1,13 @@
+[versions]
+kotlin = "2.4.0"
+slf4j = "2.0.18"
+detekt = "1.23.8"
+superkassaCore = "1.0"
+
+[libraries]
+slf4j-api = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4j" }
+superkassa-core = { group = "kz.mybrain", name = "superkassa-core", version.ref = "superkassaCore" }
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
