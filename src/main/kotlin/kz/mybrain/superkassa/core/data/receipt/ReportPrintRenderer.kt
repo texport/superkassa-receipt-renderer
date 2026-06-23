@@ -626,7 +626,7 @@ object ReportPrintRenderer {
                 $headerLogoHtml
                 $headerHtmlContent
                 <div class="brand-logo">${doc.taxpayerName ?: "SUPERKASSA"}</div>
-                <div class="org-bin">${doc.taxpayerBin?.let { "БИН/ИИН: $it" } ?: ""}</div>
+                <div class="org-bin">${doc.taxpayerBin?.let { "${translate("БИН/ИИН", "БСН/ЖСН", lang)}: $it" } ?: ""}</div>
                 <div class="rule"></div>
                 <div class="doc-title">${translate(titleRu, titleKk, lang, separator = "<br>")}</div>
             </div>

@@ -160,8 +160,8 @@ class ReceiptHtmlRendererTest {
         assertTrue(html.contains("Электронно / Электронды"))
         assertTrue(html.contains("Получено / Алынды"))
         assertTrue(html.contains("Сдача / Қайтарым"))
-        assertTrue(html.contains("БИН/ИИН: 987654321012"))
-        assertTrue(html.contains("Покупатель / Сатып алушы БИН/ЖСН: 123456789012"))
+        assertTrue(html.contains("БИН/ИИН / БСН/ЖСН: 987654321012"))
+        assertTrue(html.contains("Покупатель БИН/ИИН / Сатып алушы БСН/ЖСН: 123456789012"))
         assertTrue(html.contains("Individual Entrepreneur Ivanov"))
         assertTrue(html.contains("Almaty, Abay Ave 10"))
         assertTrue(html.contains("ЗНМ / ЗНМ"))
@@ -729,5 +729,13 @@ class ReceiptHtmlRendererTest {
             customCss = "body { background-color: #faf8f5; } .receipt-card { border-top: 5px solid #d97706; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }"
         )
         java.io.File(outputDir, "sale_receipt_branded.html").writeText(renderer.renderHtml(request1, doc1, configBranded))
+
+        // 14. Offline Sale Receipt
+        val docOffline = doc1.copy(id = "doc-ex-offline", docNo = 108, ofdStatus = "PENDING")
+        java.io.File(outputDir, "sale_receipt_offline.html").writeText(renderer.renderHtml(request1, docOffline))
+
+        // 15. Failed/Error sending to OFD Sale Receipt
+        val docFailed = doc1.copy(id = "doc-ex-failed", docNo = 109, ofdStatus = "ERROR")
+        java.io.File(outputDir, "sale_receipt_failed.html").writeText(renderer.renderHtml(request1, docFailed))
     }
 }

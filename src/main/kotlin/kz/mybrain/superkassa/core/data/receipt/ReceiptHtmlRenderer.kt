@@ -192,7 +192,7 @@ class ReceiptHtmlRenderer(
         }
         val taxpayerBin = doc.taxpayerBin
         val orgBinHtml = if (!taxpayerBin.isNullOrBlank()) {
-            "<div class=\"org-bin\">БИН/ИИН: ${ReceiptFormatter.escape(taxpayerBin)}</div>"
+            "<div class=\"org-bin\">${translate("БИН/ИИН", "БСН/ЖСН", lang)}: ${ReceiptFormatter.escape(taxpayerBin)}</div>"
         } else {
             ""
         }
@@ -204,7 +204,7 @@ class ReceiptHtmlRenderer(
         }
         val customerBin = receipt.customerBin
         val customerBinHtml = if (!customerBin.isNullOrBlank()) {
-            "<div class=\"org-bin\">${translate("Покупатель", "Сатып алушы", lang)} БИН/ЖСН: ${ReceiptFormatter.escape(customerBin)}</div>"
+            "<div class=\"org-bin\">${translate("Покупатель БИН/ИИН", "Сатып алушы БСН/ЖСН", lang)}: ${ReceiptFormatter.escape(customerBin)}</div>"
         } else {
             ""
         }
