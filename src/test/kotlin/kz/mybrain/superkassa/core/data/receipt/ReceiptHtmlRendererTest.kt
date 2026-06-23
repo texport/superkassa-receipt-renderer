@@ -8,6 +8,8 @@ import kz.mybrain.superkassa.core.domain.model.PaymentType
 import kz.mybrain.superkassa.core.domain.model.ReceiptItem
 import kz.mybrain.superkassa.core.domain.model.ReceiptOperationType
 import kz.mybrain.superkassa.core.domain.model.ReceiptPayment
+import kz.mybrain.superkassa.core.domain.model.ReceiptBranding
+import kz.mybrain.superkassa.core.domain.model.ReceiptLanguage
 import kz.mybrain.superkassa.core.domain.model.ReceiptRequest
 import kz.mybrain.superkassa.core.domain.model.ShiftInfo
 import kz.mybrain.superkassa.core.domain.model.ShiftStatus
@@ -709,5 +711,23 @@ class ReceiptHtmlRendererTest {
             totalAmount = 3000000L // 30,000.00
         )
         java.io.File(outputDir, "cash_out.html").writeText(renderer.renderCashOperationHtml(docCashOut))
+
+        // 11. Kazakh-only Sale Receipt
+        val configKk = ReceiptBranding(language = ReceiptLanguage.KK)
+        java.io.File(outputDir, "sale_receipt_kazakh.html").writeText(renderer.renderHtml(request1, doc1, configKk))
+
+        // 12. Russian-only Sale Receipt
+        val configRu = ReceiptBranding(language = ReceiptLanguage.RU)
+        java.io.File(outputDir, "sale_receipt_russian.html").writeText(renderer.renderHtml(request1, doc1, configRu))
+
+        // 13. Branded Sale Receipt
+        val configBranded = ReceiptBranding(
+            language = ReceiptLanguage.MIXED,
+            headerLogoUrl = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100&auto=format&fit=crop",
+            headerHtml = "<div class='center' style='padding: 5px; background: #ffebeb; color: #cc0000; border-radius: 4px; font-weight: bold;'>СУПЕР АКЦИЯ: -20% НА ВСЁ!</div>",
+            footerHtml = "<div class='center' style='margin-top: 10px; color: #666; font-size: 11px;'>Спасибо, что выбрали нас! / Бізді таңдағаныңызға рақмет!</div>",
+            customCss = "body { background-color: #faf8f5; } .receipt-card { border-top: 5px solid #d97706; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }"
+        )
+        java.io.File(outputDir, "sale_receipt_branded.html").writeText(renderer.renderHtml(request1, doc1, configBranded))
     }
 }
