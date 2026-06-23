@@ -56,6 +56,18 @@ object ReceiptHtmlStyles {
                     font-style: italic;
                     word-break: break-all;
                 }
+                .item-discount {
+                    font-size: 8px;
+                    color: #e53e3e;
+                    margin-top: 1px;
+                    font-style: italic;
+                }
+                .item-markup {
+                    font-size: 8px;
+                    color: #38a169;
+                    margin-top: 1px;
+                    font-style: italic;
+                }
                 .doc-title {
                     font-size: 12px;
                     font-weight: 700;

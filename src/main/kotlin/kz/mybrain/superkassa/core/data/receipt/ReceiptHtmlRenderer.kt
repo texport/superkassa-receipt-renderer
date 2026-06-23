@@ -7,6 +7,8 @@ import kz.mybrain.superkassa.core.domain.model.ReceiptRequest
 import kz.mybrain.superkassa.core.domain.model.ShiftInfo
 import kz.mybrain.superkassa.core.domain.model.UnitOfMeasurement
 import kz.mybrain.superkassa.core.domain.model.VatGroup
+import kz.mybrain.superkassa.core.domain.model.ReceiptBranding
+import kz.mybrain.superkassa.core.domain.model.ReceiptLanguage
 import kz.mybrain.superkassa.core.domain.port.QrCodeGeneratorPort
 import kz.mybrain.superkassa.core.domain.port.ReceiptRenderPort
 import kz.mybrain.superkassa.core.domain.tax.TaxCalculationService
@@ -15,7 +17,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 /**
- * Рендерит чек в HTML для печати и доставки.
+ * Рендерит чек в HTML для печати и доставки с учетом настроек локализации и брендирования.
  */
 class ReceiptHtmlRenderer(
     private val qrCodeGenerator: QrCodeGeneratorPort,
@@ -24,13 +26,22 @@ class ReceiptHtmlRenderer(
 
     companion object {
         private const val QR_CODE_SIZE_PX = 180
+
+        private fun translate(labelRu: String, labelKk: String, lang: ReceiptLanguage, separator: String = " / "): String {
+            return when (lang) {
+                ReceiptLanguage.RU -> labelRu
+                ReceiptLanguage.KK -> labelKk
+                ReceiptLanguage.MIXED -> "$labelRu$separator$labelKk"
+            }
+        }
     }
 
-    override fun renderHtml(receipt: ReceiptRequest, doc: FiscalDocumentSnapshot): String {
+    override fun renderHtml(receipt: ReceiptRequest, doc: FiscalDocumentSnapshot, config: ReceiptBranding): String {
+        val lang = config.language
         val dateStr = ReceiptFormatter.formatDate(doc.createdAt)
         val sign = doc.fiscalSign ?: doc.autonomousSign ?: "-"
         val totalStr = ReceiptFormatter.formatMoney(receipt.total)
-        val opTitle = operationTitle(receipt.operation)
+        val opTitle = operationTitle(receipt.operation, lang)
         val docNoStr = doc.docNo?.toString() ?: doc.id
         val shiftNoStr = doc.shiftNo?.toString() ?: "-"
 
@@ -39,8 +50,8 @@ class ReceiptHtmlRenderer(
         val qrDataUri = receiptUrl?.let { qrCodeGenerator.generatePngDataUri(it, QR_CODE_SIZE_PX) }
 
         val ofdStatusHtml = when (doc.ofdStatus) {
-            "DELIVERED", "SENT" -> "<span class=\"badge badge-success\">Отправлен / Жіберілді</span>"
-            "PENDING", "OFFLINE" -> "<span class=\"badge badge-warning\">Офлайн / Автономды</span>"
+            "DELIVERED", "SENT" -> "<span class=\"badge badge-success\">${translate("Отправлен", "Жіберілді", lang)}</span>"
+            "PENDING", "OFFLINE" -> "<span class=\"badge badge-warning\">${translate("Офлайн", "Автономды", lang)}</span>"
             else -> ReceiptFormatter.escape(doc.ofdStatus ?: "-")
         }
 
@@ -57,11 +68,27 @@ class ReceiptHtmlRenderer(
             } catch (e: Exception) {
                 UnitOfMeasurement.DEFAULT
             }
-            val unitStr = if (unit == UnitOfMeasurement.PIECE) "шт / дана" else "${unit.shortRus} / ${unit.shortKaz}"
+            val unitStr = if (unit == UnitOfMeasurement.PIECE) {
+                translate("шт", "дана", lang)
+            } else {
+                translate(unit.shortRus ?: "", unit.shortKaz ?: "", lang)
+            }
             val exciseStamps = item.listExciseStamp
             val exciseHtml = if (!exciseStamps.isNullOrEmpty()) {
                 val stamps = exciseStamps.joinToString(", ") { ReceiptFormatter.escape(it) }
-                "<div class=\"excise-stamps\">Маркировка / Таңбалау: $stamps</div>"
+                "<div class=\"excise-stamps\">${translate("Маркировка", "Таңбалау", lang)}: $stamps</div>"
+            } else {
+                ""
+            }
+            val discountVal = item.discount
+            val discountHtml = if (discountVal != null) {
+                "<div class=\"item-discount\">${translate("Скидка", "Жеңілдік", lang)}: -${ReceiptFormatter.formatMoney(discountVal)}</div>"
+            } else {
+                ""
+            }
+            val markupVal = item.markup
+            val markupHtml = if (markupVal != null) {
+                "<div class=\"item-markup\">${translate("Наценка", "Үстеме", lang)}: +${ReceiptFormatter.formatMoney(markupVal)}</div>"
             } else {
                 ""
             }
@@ -70,6 +97,8 @@ class ReceiptHtmlRenderer(
                 <td class="name">
                     ${ReceiptFormatter.escape(item.name)}
                     $exciseHtml
+                    $discountHtml
+                    $markupHtml
                 </td>
                 <td class="num">${item.quantity} $unitStr</td>
                 <td class="num">$priceStr</td>
@@ -80,9 +109,9 @@ class ReceiptHtmlRenderer(
 
         val paymentsHtml = receipt.payments.joinToString("") { p ->
             val typeStr = when (p.type) {
-                PaymentType.CASH -> "Наличные / Қолма-қол"
-                PaymentType.CARD -> "Карта / Карта"
-                PaymentType.ELECTRONIC -> "Электронно / Электронды"
+                PaymentType.CASH -> translate("Наличные", "Қолма-қол", lang)
+                PaymentType.CARD -> translate("Карта", "Карта", lang)
+                PaymentType.ELECTRONIC -> translate("Электронно", "Электронды", lang)
             }
             """
             <tr>
@@ -93,20 +122,20 @@ class ReceiptHtmlRenderer(
         }
 
         val summaryRowsSb = StringBuilder()
-        summaryRowsSb.append(summaryRow("Промежуточный итог / Аралық жиынтық", itemsSumStr))
+        summaryRowsSb.append(summaryRow(translate("Промежуточный итог", "Аралық жиынтық", lang), itemsSumStr))
         receipt.discount?.let {
-            summaryRowsSb.append(summaryRow("Скидка / Жеңілдік", "-${ReceiptFormatter.formatMoney(it)}"))
+            summaryRowsSb.append(summaryRow(translate("Скидка", "Жеңілдік", lang), "-${ReceiptFormatter.formatMoney(it)}"))
         }
         receipt.markup?.let {
-            summaryRowsSb.append(summaryRow("Наценка / Үстеме", ReceiptFormatter.formatMoney(it)))
+            summaryRowsSb.append(summaryRow(translate("Наценка", "Үстеме", lang), ReceiptFormatter.formatMoney(it)))
         }
         receipt.taken?.let {
-            summaryRowsSb.append(summaryRow("Получено / Алынды", ReceiptFormatter.formatMoney(it)))
+            summaryRowsSb.append(summaryRow(translate("Получено", "Алынды", lang), ReceiptFormatter.formatMoney(it)))
         }
         receipt.change?.let {
-            summaryRowsSb.append(summaryRow("Сдача / Қайтарым", ReceiptFormatter.formatMoney(it)))
+            summaryRowsSb.append(summaryRow(translate("Сдача", "Қайтарым", lang), ReceiptFormatter.formatMoney(it)))
         }
-        summaryRowsSb.append(summaryRow("ИТОГО / ЖИЫНЫ", totalStr, "grand"))
+        summaryRowsSb.append(summaryRow(translate("ИТОГО", "ЖИЫНЫ", lang), totalStr, "grand"))
         val summaryHtml = summaryRowsSb.toString()
 
         val taxResult = taxCalculationService.calculateTicketTaxes(
@@ -118,11 +147,11 @@ class ReceiptHtmlRenderer(
         val taxSectionHtml = if (taxResult.ticketTaxes.isNotEmpty()) {
             val taxesRows = taxResult.ticketTaxes.joinToString("") { line ->
                 val label = when (line.vatGroup) {
-                    VatGroup.NO_VAT -> "Без НДС / ҚҚС-сыз"
-                    VatGroup.VAT_0 -> "НДС / ҚҚС 0%"
-                    VatGroup.VAT_5 -> "НДС / ҚҚС 5%"
-                    VatGroup.VAT_10 -> "НДС / ҚҚС 10%"
-                    VatGroup.VAT_16 -> "НДС / ҚҚС 16%"
+                    VatGroup.NO_VAT -> translate("Без НДС", "ҚҚС-сыз", lang)
+                    VatGroup.VAT_0 -> translate("НДС 0%", "ҚҚС 0%", lang)
+                    VatGroup.VAT_5 -> translate("НДС 5%", "ҚҚС 5%", lang)
+                    VatGroup.VAT_10 -> translate("НДС 10%", "ҚҚС 10%", lang)
+                    VatGroup.VAT_16 -> translate("НДС 16%", "ҚҚС 16%", lang)
                 }
                 """
                 <tr>
@@ -135,13 +164,13 @@ class ReceiptHtmlRenderer(
             """
             <div class="rule"></div>
             <div class="tax-section">
-                <div class="section-title center">Налоги / Салықтар</div>
+                <div class="section-title center">${translate("Налоги", "Салықтар", lang)}</div>
                 <table class="tax-table">
                     <thead>
                         <tr>
-                            <th>Ставка / Ставка</th>
-                            <th class="num">Облагаемый оборот / Облыс</th>
-                            <th class="num">НДС / ҚҚС</th>
+                            <th>${translate("Ставка", "Ставка", lang)}</th>
+                            <th class="num">${translate("Облагаемый оборот", "Облыс", lang)}</th>
+                            <th class="num">${translate("НДС", "ҚҚС", lang)}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -175,25 +204,25 @@ class ReceiptHtmlRenderer(
         }
         val customerBin = receipt.customerBin
         val customerBinHtml = if (!customerBin.isNullOrBlank()) {
-            "<div class=\"org-bin\">Покупатель / Сатып алушы БИН/ЖСН: ${ReceiptFormatter.escape(customerBin)}</div>"
+            "<div class=\"org-bin\">${translate("Покупатель", "Сатып алушы", lang)} БИН/ЖСН: ${ReceiptFormatter.escape(customerBin)}</div>"
         } else {
             ""
         }
         val factoryNumber = doc.factoryNumber
         val factoryNumberHtml = if (!factoryNumber.isNullOrBlank()) {
-            "<tr><td>ЗНМ / ЗНМ</td><td>${ReceiptFormatter.escape(factoryNumber)}</td></tr>"
+            "<tr><td>${translate("ЗНМ", "ЗНМ", lang)}</td><td>${ReceiptFormatter.escape(factoryNumber)}</td></tr>"
         } else {
             ""
         }
 
         val ofdProviderName = when (doc.ofdProvider?.uppercase()) {
-            "KAZAKHTELECOM" -> "АО «Казахтелеком» / «Қазақтелеком» АҚ"
-            "TRANSTELECOM" -> "АО «Транстелеком» / «Транстелеком» АҚ"
-            "ALTECO" -> "ТОО «Alteco Partners» / «Alteco Partners» ЖШС"
+            "KAZAKHTELECOM" -> translate("АО «Казахтелеком»", "«Қазақтелеком» АҚ", lang)
+            "TRANSTELECOM" -> translate("АО «Транстелеком»", "«Транстелеком» АҚ", lang)
+            "ALTECO" -> translate("ТОО «Alteco Partners»", "«Alteco Partners» ЖШС", lang)
             else -> doc.ofdProvider ?: "-"
         }
         val ofdProviderHtml = if (!doc.ofdProvider.isNullOrBlank()) {
-            "<div class=\"footer-item\">ОФД / ОФД: ${ReceiptFormatter.escape(ofdProviderName)}</div>"
+            "<div class=\"footer-item\">${translate("ОФД", "ОФД", lang)}: ${ReceiptFormatter.escape(ofdProviderName)}</div>"
         } else {
             ""
         }
@@ -203,11 +232,11 @@ class ReceiptHtmlRenderer(
             "ALTECO" -> "alteco.kz"
             else -> "consumer.oofd.kz"
         }
-        val ofdSiteHtml = "<div class=\"footer-item\">Сайт проверки / Тексеру сайты: $ofdWebSite</div>"
+        val ofdSiteHtml = "<div class=\"footer-item\">${translate("Сайт проверки", "Тексеру сайты", lang)}: $ofdWebSite</div>"
 
         val receiptLinkHtml = receiptUrl?.let { url ->
             val escapedUrl = ReceiptFormatter.escape(url)
-            """<div class="receipt-link">Ссылка на чек / Чек сілтемесі: """ +
+            """<div class="receipt-link">${translate("Ссылка на чек", "Чек сілтемесі", lang)}: """ +
                 """<a href="$escapedUrl" target="_blank" rel="noopener noreferrer">$escapedUrl</a></div>"""
         } ?: ""
 
@@ -216,10 +245,16 @@ class ReceiptHtmlRenderer(
         } ?: ""
 
         val autonomousModeHtml = if (doc.isAutonomous) {
-            "<div class=\"muted center\">Автономный режим / Автономды режим</div>"
+            "<div class=\"muted center\">${translate("Автономный режим", "Автономды режим", lang)}</div>"
         } else {
             ""
         }
+
+        val headerLogoHtml = config.headerLogoUrl?.trim()?.takeIf { it.isNotEmpty() }?.let { url ->
+            """<div class="brand-logo-img"><img src="${ReceiptFormatter.escape(url)}" alt="Logo" /></div>"""
+        } ?: ""
+        val headerHtmlContent = config.headerHtml?.trim() ?: ""
+        val footerHtmlContent = config.footerHtml?.trim() ?: ""
 
         return """
         <!DOCTYPE html>
@@ -229,11 +264,16 @@ class ReceiptHtmlRenderer(
             <title>Чек #$docNoStr</title>
             <style>
                 ${ReceiptHtmlStyles.CSS}
+                .brand-logo-img { text-align: center; margin-bottom: 8px; }
+                .brand-logo-img img { max-width: 100%; max-height: 80px; object-fit: contain; }
+                ${config.customCss ?: ""}
             </style>
         </head>
         <body>
             <div class="receipt">
                 <div class="center brand-header">
+                    $headerLogoHtml
+                    $headerHtmlContent
                     $orgTitleHtml
                     $orgBinHtml
                     $orgAddressHtml
@@ -242,24 +282,24 @@ class ReceiptHtmlRenderer(
                     <div class="doc-title">$opTitle</div>
                 </div>
                 <table class="meta-table">
-                    <tr><td>Документ / Құжат</td><td>№ $docNoStr</td></tr>
-                    <tr><td>Смена / Ауысым</td><td>$shiftNoStr</td></tr>
-                    <tr><td>РНМ / ТНМ</td><td>${ReceiptFormatter.escape(doc.registrationNumber ?: "-")}</td></tr>
+                    <tr><td>${translate("Документ", "Құжат", lang)}</td><td>№ $docNoStr</td></tr>
+                    <tr><td>${translate("Смена", "Ауысым", lang)}</td><td>$shiftNoStr</td></tr>
+                    <tr><td>${translate("РНМ", "ТНМ", lang)}</td><td>${ReceiptFormatter.escape(doc.registrationNumber ?: "-")}</td></tr>
                     $factoryNumberHtml
-                    <tr><td>ККМ ID / БАҚ ID</td><td>${ReceiptFormatter.escape(doc.cashboxId ?: "-")}</td></tr>
-                    <tr><td>Дата и время / Күні мен уақыты</td><td>$dateStr</td></tr>
-                    <tr><td>Валюта / Валюта</td><td>$currency</td></tr>
-                    <tr><td>Статус ОФД / ОФД статусы</td><td>$ofdStatusHtml</td></tr>
+                    <tr><td>${translate("ККМ ID", "БАҚ ID", lang)}</td><td>${ReceiptFormatter.escape(doc.cashboxId ?: "-")}</td></tr>
+                    <tr><td>${translate("Дата и время", "Күні мен уақыты", lang)}</td><td>$dateStr</td></tr>
+                    <tr><td>${translate("Валюта", "Валюта", lang)}</td><td>$currency</td></tr>
+                    <tr><td>${translate("Статус ОФД", "ОФД статусы", lang)}</td><td>$ofdStatusHtml</td></tr>
                 </table>
                 
                 <div class="rule"></div>
                 <table class="items-table">
                     <thead>
                         <tr>
-                            <th>Наименование / Атауы</th>
-                            <th class="num">Кол-во / Саны</th>
-                            <th class="num">Цена / Бағасы</th>
-                            <th class="num">Сумма / Сомасы</th>
+                            <th>${translate("Наименование", "Атауы", lang)}</th>
+                            <th class="num">${translate("Кол-во", "Саны", lang)}</th>
+                            <th class="num">${translate("Цена", "Бағасы", lang)}</th>
+                            <th class="num">${translate("Сумма", "Сомасы", lang)}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -285,12 +325,13 @@ class ReceiptHtmlRenderer(
         
                 <div class="rule"></div>
                 <div class="footer">
-                    <div class="footer-item">Фискальный признак / Фискалдық белгі: $escapedSign</div>
+                    <div class="footer-item">${translate("Фискальный признак", "Фискалдық белгі", lang)}: $escapedSign</div>
                     $ofdProviderHtml
                     $ofdSiteHtml
                     $receiptLinkHtml
                     $qrHtml
                     $autonomousModeHtml
+                    $footerHtmlContent
                 </div>
             </div>
         </body>
@@ -305,11 +346,11 @@ class ReceiptHtmlRenderer(
         )}</td><td class=\"num\">${ReceiptFormatter.escape(value)}</td></tr>"
     }
 
-    private fun operationTitle(op: ReceiptOperationType): String = when (op) {
-        ReceiptOperationType.SELL -> "ЧЕК ПРОДАЖИ / САТУ ЧЕГІ"
-        ReceiptOperationType.SELL_RETURN -> "ВОЗВРАТ ПРОДАЖИ / САТУДЫ ҚАЙТАРУ"
-        ReceiptOperationType.BUY -> "ЧЕК ПОКУПКИ / САТЫП АЛУ ЧЕГІ"
-        ReceiptOperationType.BUY_RETURN -> "ВОЗВРАТ ПОКУПКИ / САТЫП АЛУДЫ ҚАЙТАРУ"
+    private fun operationTitle(op: ReceiptOperationType, lang: ReceiptLanguage): String = when (op) {
+        ReceiptOperationType.SELL -> translate("ЧЕК ПРОДАЖИ", "САТУ ЧЕГІ", lang)
+        ReceiptOperationType.SELL_RETURN -> translate("ВОЗВРАТ ПРОДАЖИ", "САТУДЫ ҚАЙТАРУ", lang)
+        ReceiptOperationType.BUY -> translate("ЧЕК ПОКУПКИ", "САТЫП АЛУ ЧЕГІ", lang)
+        ReceiptOperationType.BUY_RETURN -> translate("ВОЗВРАТ ПОКУПКИ", "САТЫП АЛУДЫ ҚАЙТАРУ", lang)
     }
 
     private fun buildFallbackReceiptUrl(receipt: ReceiptRequest, doc: FiscalDocumentSnapshot): String? {
@@ -323,19 +364,19 @@ class ReceiptHtmlRenderer(
         return "https://consumer.oofd.kz?i=$regNum&f=$sign&s=$totalStr&t=$dtStr"
     }
 
-    override fun renderXReportHtml(shift: ShiftInfo, counters: Map<String, Long>): String {
-        return ReportPrintRenderer.renderXReportHtml(shift, counters)
+    override fun renderXReportHtml(shift: ShiftInfo, counters: Map<String, Long>, config: ReceiptBranding): String {
+        return ReportPrintRenderer.renderXReportHtml(shift, counters, config)
     }
 
-    override fun renderOpenShiftHtml(shift: ShiftInfo): String {
-        return ReportPrintRenderer.renderOpenShiftHtml(shift)
+    override fun renderOpenShiftHtml(shift: ShiftInfo, config: ReceiptBranding): String {
+        return ReportPrintRenderer.renderOpenShiftHtml(shift, config)
     }
 
-    override fun renderCloseShiftHtml(shift: ShiftInfo, counters: Map<String, Long>): String {
-        return ReportPrintRenderer.renderCloseShiftHtml(shift, counters)
+    override fun renderCloseShiftHtml(shift: ShiftInfo, counters: Map<String, Long>, config: ReceiptBranding): String {
+        return ReportPrintRenderer.renderCloseShiftHtml(shift, counters, config)
     }
 
-    override fun renderCashOperationHtml(doc: FiscalDocumentSnapshot): String {
-        return ReportPrintRenderer.renderCashOperationHtml(doc)
+    override fun renderCashOperationHtml(doc: FiscalDocumentSnapshot, config: ReceiptBranding): String {
+        return ReportPrintRenderer.renderCashOperationHtml(doc, config)
     }
 }

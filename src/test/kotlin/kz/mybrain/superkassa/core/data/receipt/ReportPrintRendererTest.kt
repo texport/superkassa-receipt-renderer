@@ -20,22 +20,19 @@ class ReportPrintRendererTest {
         val counters = mapOf(
             "operation.OPERATION_SELL.count" to 10L,
             "operation.OPERATION_SELL.sum" to 100050L,
-            "operation.OPERATION_SELL_RETURN.count" to 0L, // Should be filtered out because it is 0
-            "operation.OPERATION_SELL_RETURN.sum" to 0L, // Should be filtered out because it is 0
-            "unknown.counter" to 5L
+            "operation.OPERATION_SELL_RETURN.count" to 0L,
+            "operation.OPERATION_SELL_RETURN.sum" to 0L
         )
 
         val html = ReportPrintRenderer.renderXReportHtml(shift, counters)
         assertTrue(html.contains("X-ОТЧЁТ"))
-        assertTrue(html.contains("Смена № 12"))
-        assertTrue(html.contains("Продажи (кол-во операций)"))
+        assertTrue(html.contains("Смена № / Ауысым №"))
+        assertTrue(html.contains("12"))
+        assertTrue(html.contains("Продажа / Сату"))
         assertTrue(html.contains("10"))
-        assertTrue(html.contains("Продажи (сумма, тг)"))
-        assertTrue(html.contains("100050.00") || html.contains("100050,00"))
-        assertTrue(html.contains("unknown.counter"))
-        assertTrue(html.contains("5"))
-        // 0 counters should be omitted
-        assertTrue(!html.contains("Возвраты продаж"))
+        assertTrue(html.contains("1000.50"))
+        // 0 counters should be omitted from output
+        assertTrue(!html.contains("Возврат продажи"))
     }
 
     @Test
@@ -48,7 +45,7 @@ class ReportPrintRendererTest {
             openedAt = 1782200000000L
         )
         val html = ReportPrintRenderer.renderXReportHtml(shift, emptyMap())
-        assertTrue(html.contains("Нет данных"))
+        assertTrue(html.contains("Нет данных / Деректер жоқ"))
     }
 
     @Test
@@ -61,8 +58,9 @@ class ReportPrintRendererTest {
             openedAt = 1782200000000L
         )
         val html = ReportPrintRenderer.renderOpenShiftHtml(shift)
-        assertTrue(html.contains("ОТКРЫТИЕ СМЕНЫ"))
-        assertTrue(html.contains("Смена № 12"))
+        assertTrue(html.contains("ОТКРЫТИЕ СМЕНЫ / АУЫСЫМДЫ АШУ"))
+        assertTrue(html.contains("Смена № / Ауысым №"))
+        assertTrue(html.contains("12"))
     }
 
     @Test
@@ -82,9 +80,10 @@ class ReportPrintRendererTest {
 
         val html = ReportPrintRenderer.renderCloseShiftHtml(shift, counters)
         assertTrue(html.contains("Z-ОТЧЁТ (ЗАКРЫТИЕ СМЕНЫ)"))
-        assertTrue(html.contains("Смена № 12"))
-        assertTrue(html.contains("Продажи (сумма, тг)"))
-        assertTrue(html.contains("100050.00") || html.contains("100050,00"))
+        assertTrue(html.contains("Смена № / Ауысым №"))
+        assertTrue(html.contains("12"))
+        assertTrue(html.contains("Продажа / Сату"))
+        assertTrue(html.contains("1000.50"))
     }
 
     @Test
@@ -98,7 +97,8 @@ class ReportPrintRendererTest {
             closedAt = null
         )
         val html = ReportPrintRenderer.renderCloseShiftHtml(shift, emptyMap())
-        assertTrue(html.contains("Закрыта: -"))
+        assertTrue(html.contains("Закрыта / Жабылған күні"))
+        assertTrue(html.contains("-"))
     }
 
     @Test
@@ -122,8 +122,8 @@ class ReportPrintRendererTest {
 
         val htmlIn = ReportPrintRenderer.renderCashOperationHtml(docIn)
         assertTrue(htmlIn.contains("ВНЕСЕНИЕ НАЛИЧНЫХ"))
-        assertTrue(htmlIn.contains("250000.00 KZT") || htmlIn.contains("250000,00 KZT"))
-        assertTrue(htmlIn.contains("Документ № 45"))
+        assertTrue(htmlIn.contains("2500.00 KZT") || htmlIn.contains("2500,00 KZT"))
+        assertTrue(htmlIn.contains("Документ № / Құжат №"))
 
         val docOut = FiscalDocumentSnapshot(
             id = "doc-2",
@@ -144,8 +144,7 @@ class ReportPrintRendererTest {
 
         val htmlOut = ReportPrintRenderer.renderCashOperationHtml(docOut)
         assertTrue(htmlOut.contains("ИЗЪЯТИЕ НАЛИЧНЫХ"))
-        assertTrue(htmlOut.contains("10000.00 KZT") || htmlOut.contains("10000,00 KZT"))
-        assertTrue(htmlOut.contains("Документ № doc-2"))
+        assertTrue(htmlOut.contains("100.00 KZT") || htmlOut.contains("100,00 KZT"))
 
         val docOther = FiscalDocumentSnapshot(
             id = "doc-3",

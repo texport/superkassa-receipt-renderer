@@ -28,6 +28,8 @@ dependencies {
     
     testImplementation(kotlin("test"))
     testImplementation(libs.mockk)
+    testImplementation(libs.zxing.core)
+    testImplementation(libs.zxing.javase)
     detektPlugins(libs.detekt.formatting)
 }
 
