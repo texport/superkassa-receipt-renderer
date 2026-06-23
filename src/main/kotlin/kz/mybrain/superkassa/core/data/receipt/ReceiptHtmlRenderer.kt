@@ -1,8 +1,14 @@
 package kz.mybrain.superkassa.core.data.receipt
 
-import kz.mybrain.superkassa.core.domain.model.*
-import kz.mybrain.superkassa.core.domain.port.ReceiptRenderPort
+import kz.mybrain.superkassa.core.domain.model.FiscalDocumentSnapshot
+import kz.mybrain.superkassa.core.domain.model.PaymentType
+import kz.mybrain.superkassa.core.domain.model.ReceiptOperationType
+import kz.mybrain.superkassa.core.domain.model.ReceiptRequest
+import kz.mybrain.superkassa.core.domain.model.ShiftInfo
+import kz.mybrain.superkassa.core.domain.model.UnitOfMeasurement
+import kz.mybrain.superkassa.core.domain.model.VatGroup
 import kz.mybrain.superkassa.core.domain.port.QrCodeGeneratorPort
+import kz.mybrain.superkassa.core.domain.port.ReceiptRenderPort
 import kz.mybrain.superkassa.core.domain.tax.TaxCalculationService
 import java.time.Instant
 import java.time.ZoneId
@@ -11,7 +17,10 @@ import java.time.format.DateTimeFormatter
 /**
  * Рендерит чек в HTML для печати и доставки.
  */
-class ReceiptHtmlRenderer(private val qrCodeGenerator: QrCodeGeneratorPort) : ReceiptRenderPort {
+class ReceiptHtmlRenderer(
+    private val qrCodeGenerator: QrCodeGeneratorPort,
+    private val taxCalculationService: TaxCalculationService = TaxCalculationService()
+) : ReceiptRenderPort {
 
     companion object {
         private const val QR_CODE_SIZE_PX = 180
@@ -24,22 +33,22 @@ class ReceiptHtmlRenderer(private val qrCodeGenerator: QrCodeGeneratorPort) : Re
         val opTitle = operationTitle(receipt.operation)
         val docNoStr = doc.docNo?.toString() ?: doc.id
         val shiftNoStr = doc.shiftNo?.toString() ?: "-"
-        
+
         val receiptUrl = doc.receiptUrl?.trim()?.takeIf { it.isNotEmpty() } ?: buildFallbackReceiptUrl(receipt, doc)
-        
+
         val qrDataUri = receiptUrl?.let { qrCodeGenerator.generatePngDataUri(it, QR_CODE_SIZE_PX) }
-        
+
         val ofdStatusHtml = when (doc.ofdStatus) {
             "DELIVERED", "SENT" -> "<span class=\"badge badge-success\">Отправлен / Жіберілді</span>"
             "PENDING", "OFFLINE" -> "<span class=\"badge badge-warning\">Офлайн / Автономды</span>"
             else -> ReceiptFormatter.escape(doc.ofdStatus ?: "-")
         }
-        
+
         val currency = doc.currency ?: "KZT"
-        
+
         val itemsSumCents = receipt.items.sumOf { ReceiptFormatter.moneyToCents(it.sum) }
         val itemsSumStr = ReceiptFormatter.formatCents(itemsSumCents)
-        
+
         val itemsHtml = receipt.items.joinToString("") { item ->
             val priceStr = ReceiptFormatter.formatMoney(item.price)
             val sumStr = ReceiptFormatter.formatMoney(item.sum)
@@ -68,7 +77,7 @@ class ReceiptHtmlRenderer(private val qrCodeGenerator: QrCodeGeneratorPort) : Re
             </tr>
             """.trimIndent()
         }
-        
+
         val paymentsHtml = receipt.payments.joinToString("") { p ->
             val typeStr = when (p.type) {
                 PaymentType.CASH -> "Наличные / Қолма-қол"
@@ -82,7 +91,7 @@ class ReceiptHtmlRenderer(private val qrCodeGenerator: QrCodeGeneratorPort) : Re
             </tr>
             """.trimIndent()
         }
-        
+
         val summaryRowsSb = StringBuilder()
         summaryRowsSb.append(summaryRow("Промежуточный итог / Аралық жиынтық", itemsSumStr))
         receipt.discount?.let {
@@ -99,13 +108,13 @@ class ReceiptHtmlRenderer(private val qrCodeGenerator: QrCodeGeneratorPort) : Re
         }
         summaryRowsSb.append(summaryRow("ИТОГО / ЖИЫНЫ", totalStr, "grand"))
         val summaryHtml = summaryRowsSb.toString()
-        
-        val taxResult = TaxCalculationService().calculateTicketTaxes(
+
+        val taxResult = taxCalculationService.calculateTicketTaxes(
             items = receipt.items,
             taxRegime = receipt.taxRegime,
             defaultVatGroup = receipt.defaultVatGroup ?: VatGroup.NO_VAT
         )
-        
+
         val taxSectionHtml = if (taxResult.ticketTaxes.isNotEmpty()) {
             val taxesRows = taxResult.ticketTaxes.joinToString("") { line ->
                 val label = when (line.vatGroup) {
@@ -144,7 +153,7 @@ class ReceiptHtmlRenderer(private val qrCodeGenerator: QrCodeGeneratorPort) : Re
         } else {
             ""
         }
-        
+
         val escapedSign = ReceiptFormatter.escape(sign)
         val taxpayerName = doc.taxpayerName
         val orgTitleHtml = if (!taxpayerName.isNullOrBlank()) {
@@ -176,7 +185,7 @@ class ReceiptHtmlRenderer(private val qrCodeGenerator: QrCodeGeneratorPort) : Re
         } else {
             ""
         }
-        
+
         val ofdProviderName = when (doc.ofdProvider?.uppercase()) {
             "KAZAKHTELECOM" -> "АО «Казахтелеком» / «Қазақтелеком» АҚ"
             "TRANSTELECOM" -> "АО «Транстелеком» / «Транстелеком» АҚ"
@@ -199,19 +208,19 @@ class ReceiptHtmlRenderer(private val qrCodeGenerator: QrCodeGeneratorPort) : Re
         val receiptLinkHtml = receiptUrl?.let { url ->
             val escapedUrl = ReceiptFormatter.escape(url)
             """<div class="receipt-link">Ссылка на чек / Чек сілтемесі: """ +
-            """<a href="$escapedUrl" target="_blank" rel="noopener noreferrer">$escapedUrl</a></div>"""
+                """<a href="$escapedUrl" target="_blank" rel="noopener noreferrer">$escapedUrl</a></div>"""
         } ?: ""
-        
+
         val qrHtml = qrDataUri?.let { uri ->
             """<div class="qr"><img src="${ReceiptFormatter.escape(uri)}" alt="QR-код чека" /></div>"""
         } ?: ""
-        
+
         val autonomousModeHtml = if (doc.isAutonomous) {
             "<div class=\"muted center\">Автономный режим / Автономды режим</div>"
         } else {
             ""
         }
-        
+
         return """
         <!DOCTYPE html>
         <html lang="ru">
@@ -291,7 +300,9 @@ class ReceiptHtmlRenderer(private val qrCodeGenerator: QrCodeGeneratorPort) : Re
 
     private fun summaryRow(label: String, value: String, cssClass: String? = null): String {
         val classAttr = if (!cssClass.isNullOrBlank()) " class=\"$cssClass\"" else ""
-        return "<tr$classAttr><td>${ReceiptFormatter.escape(label)}</td><td class=\"num\">${ReceiptFormatter.escape(value)}</td></tr>"
+        return "<tr$classAttr><td>${ReceiptFormatter.escape(
+            label
+        )}</td><td class=\"num\">${ReceiptFormatter.escape(value)}</td></tr>"
     }
 
     private fun operationTitle(op: ReceiptOperationType): String = when (op) {

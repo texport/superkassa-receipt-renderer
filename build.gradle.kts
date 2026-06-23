@@ -1,32 +1,119 @@
 plugins {
-    alias(libs.plugins.detekt)
     alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.detekt)
+    alias(libs.plugins.nmcp)
+    id("maven-publish")
+    id("signing")
+    id("jacoco")
 }
 
-group = "kz.mybrain"
-version = "1.0"
+group = "io.github.texport"
+version = "1.0.1"
 
 repositories {
     mavenLocal()
     mavenCentral()
 }
 
+detekt {
+    config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
+    buildUponDefaultConfig = true
+    allRules = true
+    autoCorrect = true
+}
+
 dependencies {
     implementation(libs.superkassa.core)
     implementation(libs.slf4j.api)
+    
     testImplementation(kotlin("test"))
+    testImplementation(libs.mockk)
+    detektPlugins(libs.detekt.formatting)
 }
 
 kotlin {
     jvmToolchain(17)
 }
 
-detekt {
-    config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
-    buildUponDefaultConfig = true
-    allRules = true
-}
-
 tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
     jvmTarget = "17"
+}
+
+val sourcesJar = tasks.register<Jar>("sourcesJar") {
+    description = "Generates the sources JAR artifact"
+    archiveClassifier.set("sources")
+    from(sourceSets.main.get().allSource)
+}
+
+val javadocJar = tasks.register<Jar>("javadocJar") {
+    description = "Generates the javadoc JAR artifact"
+    archiveClassifier.set("javadoc")
+    from(tasks.javadoc)
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("mavenJava") {
+            from(components["java"])
+            artifact(sourcesJar)
+            artifact(javadocJar)
+
+            pom {
+                name.set("superkassa-receipt-renderer")
+                description.set("HTML/text receipt rendering engine for Superkassa")
+                url.set("https://github.com/texport/superkassa-receipt-renderer")
+
+                licenses {
+                    license {
+                        name.set("The Apache License, Version 2.0")
+                        url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+                    }
+                }
+
+                developers {
+                    developer {
+                        id.set("sergeyivanov")
+                        name.set("Sergey Ivanov")
+                        email.set("ivanov.sergey.ekb@gmail.com")
+                    }
+                }
+
+                scm {
+                    connection.set("scm:git:git://github.com/texport/superkassa-receipt-renderer.git")
+                    developerConnection.set("scm:git:ssh://github.com/texport/superkassa-receipt-renderer.git")
+                    url.set("https://github.com/texport/superkassa-receipt-renderer")
+                }
+            }
+        }
+    }
+}
+
+signing {
+    val signingKey = System.getenv("SIGNING_KEY")
+    val signingPassword = System.getenv("SIGNING_PASSWORD")
+    if (!signingKey.isNullOrEmpty() && !signingPassword.isNullOrEmpty()) {
+        useInMemoryPgpKeys(signingKey, signingPassword)
+    }
+    sign(publishing.publications["mavenJava"])
+}
+
+nmcp {
+    publishAllPublicationsToCentralPortal {
+        username.set(project.findProperty("ossrhUsername")?.toString() ?: System.getenv("OSSRH_USERNAME"))
+        password.set(project.findProperty("ossrhPassword")?.toString() ?: System.getenv("OSSRH_PASSWORD"))
+        publishingType.set("USER_MANAGED")
+    }
+}
+
+tasks.test {
+    useJUnitPlatform()
+    finalizedBy(tasks.jacocoTestReport)
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test)
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+    }
 }

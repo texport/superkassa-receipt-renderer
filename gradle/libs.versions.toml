@@ -3,11 +3,16 @@ kotlin = "2.4.0"
 slf4j = "2.0.18"
 detekt = "1.23.8"
 superkassaCore = "1.0"
+nmcp = "1.5.0"
+mockk = "1.14.11"
 
 [libraries]
 slf4j-api = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4j" }
 superkassa-core = { group = "kz.mybrain", name = "superkassa-core", version.ref = "superkassaCore" }
+mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
+detekt-formatting = { group = "io.gitlab.arturbosch.detekt", name = "detekt-formatting", version.ref = "detekt" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+nmcp = { id = "com.gradleup.nmcp", version.ref = "nmcp" }
