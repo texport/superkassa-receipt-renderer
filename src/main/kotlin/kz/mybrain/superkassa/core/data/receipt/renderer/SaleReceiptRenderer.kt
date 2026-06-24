@@ -120,13 +120,27 @@ class SaleReceiptRenderer(
                 PaymentType.CASH -> t("Наличные", "Қолма-қол")
                 PaymentType.CARD -> t("Карта", "Карта")
                 PaymentType.ELECTRONIC -> t("Электронно", "Электронды")
+                PaymentType.MOBILE -> t("Мобильный платеж", "Мобильді төлем")
             }
-            """
+            val paymentRow = """
             <tr>
-                <td>$typeStr</td>
-                <td class="num">${ReceiptFormatter.formatMoney(p.sum)}</td>
+                <td class="bold">$typeStr</td>
+                <td class="num bold">${ReceiptFormatter.formatMoney(p.sum)}</td>
             </tr>
             """.trimIndent()
+
+            if (p.type == PaymentType.CASH) {
+                val details = StringBuilder(paymentRow)
+                receipt.taken?.let {
+                    details.append("\n<tr><td style=\"padding-left: 15px; font-size: 0.9em; opacity: 0.8;\">${t("Получено", "Алынды")}</td><td class=\"num\" style=\"font-size: 0.9em; opacity: 0.8;\">${ReceiptFormatter.formatMoney(it)}</td></tr>")
+                }
+                receipt.change?.let {
+                    details.append("\n<tr><td style=\"padding-left: 15px; font-size: 0.9em; opacity: 0.8;\">${t("Сдача", "Қайтарым")}</td><td class=\"num\" style=\"font-size: 0.9em; opacity: 0.8;\">${ReceiptFormatter.formatMoney(it)}</td></tr>")
+                }
+                details.toString()
+            } else {
+                paymentRow
+            }
         }
 
         val summaryRowsSb = StringBuilder()
@@ -136,12 +150,6 @@ class SaleReceiptRenderer(
         }
         receipt.markup?.let {
             summaryRowsSb.append(summaryRow(t("Наценка", "Үстеме"), ReceiptFormatter.formatMoney(it)))
-        }
-        receipt.taken?.let {
-            summaryRowsSb.append(summaryRow(t("Получено", "Алынды"), ReceiptFormatter.formatMoney(it)))
-        }
-        receipt.change?.let {
-            summaryRowsSb.append(summaryRow(t("Сдача", "Қайтарым"), ReceiptFormatter.formatMoney(it)))
         }
         summaryRowsSb.append(summaryRow(t("ИТОГО", "ЖИЫНЫ"), totalStr, "grand"))
         val summaryHtml = summaryRowsSb.toString()
@@ -289,16 +297,16 @@ class SaleReceiptRenderer(
             </div>
             $afterItemsHtml
             <div class="rule"></div>
-            <table class="payments-table">
-                <tbody>
-                    $paymentsHtml
-                </tbody>
-            </table>
             $beforeTotalsHtml
-            <div class="rule"></div>
             <table class="summary-table">
                 <tbody>
                     $summaryHtml
+                </tbody>
+            </table>
+            <div class="rule"></div>
+            <table class="payments-table">
+                <tbody>
+                    $paymentsHtml
                 </tbody>
             </table>
             $taxSectionHtml

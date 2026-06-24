@@ -875,11 +875,17 @@ class ReceiptHtmlRendererTest {
                 val themeName = if (isDark) "dark" else "light"
                 val dir = java.io.File(rootOutputDir, "${width}mm/$themeName")
                 
-                val ticketsDir = java.io.File(dir, "tickets")
+                val salesDir = java.io.File(dir, "tickets/sales")
+                val refundSalesDir = java.io.File(dir, "tickets/refund_sales")
+                val buysDir = java.io.File(dir, "tickets/buys")
+                val refundBuysDir = java.io.File(dir, "tickets/refund_buys")
                 val reportsDir = java.io.File(dir, "reports")
                 val operationsDir = java.io.File(dir, "operations")
                 
-                ticketsDir.mkdirs()
+                salesDir.mkdirs()
+                refundSalesDir.mkdirs()
+                buysDir.mkdirs()
+                refundBuysDir.mkdirs()
                 reportsDir.mkdirs()
                 operationsDir.mkdirs()
 
@@ -898,32 +904,32 @@ class ReceiptHtmlRendererTest {
                 val kkmForFolder = baseKkm.copy(branding = folderBranding)
 
                 // 1. Standard Sale Receipt
-                ticketsDir.resolve("sale_receipt.html").writeText(
+                salesDir.resolve("sale_receipt.html").writeText(
                     renderer.renderHtml(request1, doc1, kkmForFolder)
                 )
 
                 // 2. Mixed Payment, VAT 16%, discounts
-                ticketsDir.resolve("sale_with_vat_and_discounts.html").writeText(
+                salesDir.resolve("sale_with_vat_and_discounts.html").writeText(
                     renderer.renderHtml(request2, doc2, kkmForFolder)
                 )
 
                 // 2b. Mixed Payment, MIXED VAT, ONLY item-level discounts
-                ticketsDir.resolve("sale_with_only_item_discounts.html").writeText(
+                salesDir.resolve("sale_with_only_item_discounts.html").writeText(
                     renderer.renderHtml(request2ItemDiscountOnly, doc2, kkmForFolder)
                 )
 
                 // 3. Refund Sale Receipt
-                ticketsDir.resolve("refund_sale_receipt.html").writeText(
+                refundSalesDir.resolve("refund_sale_receipt.html").writeText(
                     renderer.renderHtml(request3, doc3, kkmForFolder)
                 )
 
                 // 4. Purchase Receipt
-                ticketsDir.resolve("buy_receipt.html").writeText(
+                buysDir.resolve("buy_receipt.html").writeText(
                     renderer.renderHtml(request4, doc4, kkmForFolder)
                 )
 
                 // 5. Refund Purchase Receipt
-                ticketsDir.resolve("refund_buy_receipt.html").writeText(
+                refundBuysDir.resolve("refund_buy_receipt.html").writeText(
                     renderer.renderHtml(request5, doc5, kkmForFolder)
                 )
 
@@ -1004,13 +1010,13 @@ class ReceiptHtmlRendererTest {
 
                 // 11. Kazakh-only Sale Receipt
                 val brandingKk = folderBranding.copy(language = ReceiptLanguage.KK)
-                ticketsDir.resolve("sale_receipt_kazakh.html").writeText(
+                salesDir.resolve("sale_receipt_kazakh.html").writeText(
                     renderer.renderHtml(request1, doc1, kkmForFolder.copy(branding = brandingKk))
                 )
 
                 // 12. Russian-only Sale Receipt
                 val brandingRu = folderBranding.copy(language = ReceiptLanguage.RU)
-                ticketsDir.resolve("sale_receipt_russian.html").writeText(
+                salesDir.resolve("sale_receipt_russian.html").writeText(
                     renderer.renderHtml(request1, doc1, kkmForFolder.copy(branding = brandingRu))
                 )
 
@@ -1026,7 +1032,7 @@ class ReceiptHtmlRendererTest {
                         "body { background-color: #faf8f5; } .receipt-card { border-top: 5px solid #d97706; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }"
                     }
                 )
-                ticketsDir.resolve("sale_receipt_branded.html").writeText(
+                salesDir.resolve("sale_receipt_branded.html").writeText(
                     renderer.renderHtml(request1, doc1, kkmForFolder.copy(branding = brandingBranded))
                 )
 
@@ -1045,57 +1051,57 @@ class ReceiptHtmlRendererTest {
                     beforeQrHtml = "<div class='center' style='font-style: italic; font-size: 11px; color: #4f46e5;'>BEFORE QR PROMO</div>",
                     footerHtml = "<div class='center' style='font-size: 10px; color: #999;'>FOOTER THANK YOU</div>"
                 )
-                ticketsDir.resolve("sale_receipt_fully_branded.html").writeText(
+                salesDir.resolve("sale_receipt_fully_branded.html").writeText(
                     renderer.renderHtml(request1, doc1, kkmForFolder.copy(branding = brandingFullyBranded))
                 )
 
                 // 14. Offline Sale Receipt
                 val docOffline = doc1.copy(id = "doc-ex-offline", docNo = 108, ofdStatus = "PENDING")
-                ticketsDir.resolve("sale_receipt_offline.html").writeText(
+                salesDir.resolve("sale_receipt_offline.html").writeText(
                     renderer.renderHtml(request1, docOffline, kkmForFolder)
                 )
 
                 // 15. Failed/Error sending to OFD Sale Receipt
                 val docFailed = doc1.copy(id = "doc-ex-failed", docNo = 109, ofdStatus = "ERROR")
-                ticketsDir.resolve("sale_receipt_failed.html").writeText(
+                salesDir.resolve("sale_receipt_failed.html").writeText(
                     renderer.renderHtml(request1, docFailed, kkmForFolder)
                 )
 
                 // 16. Visual Branding Preview
-                ticketsDir.resolve("sale_receipt_preview.html").writeText(
+                salesDir.resolve("sale_receipt_preview.html").writeText(
                     renderer.renderPreviewHtml(brandingBranded)
                 )
 
                 // 17. Sale Receipt with All VAT rates (MIXED, RU, KK)
-                ticketsDir.resolve("sale_with_all_vat_rates.html").writeText(
+                salesDir.resolve("sale_with_all_vat_rates.html").writeText(
                     renderer.renderHtml(requestAllVats, docAllVats, kkmForFolder)
                 )
-                ticketsDir.resolve("sale_with_all_vat_rates_russian.html").writeText(
+                salesDir.resolve("sale_with_all_vat_rates_russian.html").writeText(
                     renderer.renderHtml(requestAllVats, docAllVats, kkmForFolder.copy(branding = folderBranding.copy(language = ReceiptLanguage.RU)))
                 )
-                ticketsDir.resolve("sale_with_all_vat_rates_kazakh.html").writeText(
+                salesDir.resolve("sale_with_all_vat_rates_kazakh.html").writeText(
                     renderer.renderHtml(requestAllVats, docAllVats, kkmForFolder.copy(branding = folderBranding.copy(language = ReceiptLanguage.KK)))
                 )
 
                 // Additional RU/KK matrix files for completeness
-                ticketsDir.resolve("refund_sale_receipt_russian.html").writeText(
+                refundSalesDir.resolve("refund_sale_receipt_russian.html").writeText(
                     renderer.renderHtml(request3, doc3, kkmForFolder.copy(branding = folderBranding.copy(language = ReceiptLanguage.RU)))
                 )
-                ticketsDir.resolve("refund_sale_receipt_kazakh.html").writeText(
+                refundSalesDir.resolve("refund_sale_receipt_kazakh.html").writeText(
                     renderer.renderHtml(request3, doc3, kkmForFolder.copy(branding = folderBranding.copy(language = ReceiptLanguage.KK)))
                 )
 
-                ticketsDir.resolve("buy_receipt_russian.html").writeText(
+                buysDir.resolve("buy_receipt_russian.html").writeText(
                     renderer.renderHtml(request4, doc4, kkmForFolder.copy(branding = folderBranding.copy(language = ReceiptLanguage.RU)))
                 )
-                ticketsDir.resolve("buy_receipt_kazakh.html").writeText(
+                buysDir.resolve("buy_receipt_kazakh.html").writeText(
                     renderer.renderHtml(request4, doc4, kkmForFolder.copy(branding = folderBranding.copy(language = ReceiptLanguage.KK)))
                 )
 
-                ticketsDir.resolve("refund_buy_receipt_russian.html").writeText(
+                refundBuysDir.resolve("refund_buy_receipt_russian.html").writeText(
                     renderer.renderHtml(request5, doc5, kkmForFolder.copy(branding = folderBranding.copy(language = ReceiptLanguage.RU)))
                 )
-                ticketsDir.resolve("refund_buy_receipt_kazakh.html").writeText(
+                refundBuysDir.resolve("refund_buy_receipt_kazakh.html").writeText(
                     renderer.renderHtml(request5, doc5, kkmForFolder.copy(branding = folderBranding.copy(language = ReceiptLanguage.KK)))
                 )
 
