@@ -22,11 +22,7 @@ abstract class BaseDocumentRenderer {
             ReceiptLanguage.RU -> labelRu
             ReceiptLanguage.KK -> labelKk
             ReceiptLanguage.MIXED -> {
-                if (isNarrow || separator.contains("<br")) {
-                    """<span class="lang-kk">$labelKk</span><br/><span class="lang-ru" style="font-size: 0.85em; opacity: 0.7;">$labelRu</span>"""
-                } else {
-                    """<span class="lang-kk">$labelKk</span><span class="lang-sep">$separator</span><span class="lang-ru">$labelRu</span>"""
-                }
+                """<span class="lang-kk">$labelKk</span><span class="lang-sep">$separator</span><span class="lang-ru">$labelRu</span>"""
             }
         }
     }
