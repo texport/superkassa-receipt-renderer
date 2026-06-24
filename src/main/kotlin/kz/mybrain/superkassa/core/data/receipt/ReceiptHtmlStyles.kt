@@ -550,18 +550,13 @@ object ReceiptHtmlStyles {
                     font-weight: inherit;
                 }
                 .lang-sep {
-                    display: block;
-                    width: 100%;
-                    height: 1px;
-                    background-color: var(--m3-outline-variant);
-                    margin: 4px 0;
-                    font-size: 0;
-                    line-height: 0;
+                    display: none;
                 }
                 .lang-ru {
                     display: block;
-                    font-size: 0.85em;
-                    opacity: 0.75;
+                    font-size: 0.82em;
+                    opacity: 0.6;
+                    margin-top: 2px;
                     font-weight: normal !important;
                 }
                 .bold { font-weight: 700; }
