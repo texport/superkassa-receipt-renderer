@@ -553,16 +553,15 @@ object ReceiptHtmlStyles {
                     display: block;
                     width: 100%;
                     height: 1px;
-                    background-color: currentColor;
-                    opacity: 0.15;
-                    margin: 3px 0;
+                    background-color: var(--m3-outline-variant);
+                    margin: 4px 0;
                     font-size: 0;
                     line-height: 0;
                 }
                 .lang-ru {
                     display: block;
                     font-size: 0.85em;
-                    opacity: 0.7;
+                    opacity: 0.75;
                     font-weight: normal !important;
                 }
                 .bold { font-weight: 700; }
@@ -708,30 +707,7 @@ object ReceiptHtmlStyles {
                     color: var(--m3-on-surface-variant);
                 }
 
-                /* Bilingual Layout Optimization */
-                .lang-kk {
-                    display: inline;
-                }
-                .lang-ru {
-                    display: inline;
-                    font-size: 0.88em;
-                    font-weight: 400;
-                    opacity: 0.8;
-                    color: #475569;
-                    color: var(--m3-on-surface-variant);
-                }
-                .lang-sep {
-                    color: #cbd5e1;
-                    color: var(--m3-outline);
-                    padding: 0 2px;
-                }
-                .tape-58mm .lang-ru {
-                    display: block;
-                    margin-top: 1px;
-                }
-                .tape-58mm .lang-sep {
-                    display: none;
-                }
+
                 
                 /* Word split prevention on tables */
                 .meta-table td, .summary-table td, .parent-ticket-table td, .tax-row-table td, .item-row-table td {
