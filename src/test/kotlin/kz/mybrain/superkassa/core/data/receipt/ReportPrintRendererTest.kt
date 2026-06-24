@@ -1,12 +1,32 @@
 package kz.mybrain.superkassa.core.data.receipt
 
+import kz.mybrain.superkassa.core.data.receipt.renderer.CashOperationRenderer
+import kz.mybrain.superkassa.core.data.receipt.renderer.OpenShiftRenderer
+import kz.mybrain.superkassa.core.data.receipt.renderer.XReportRenderer
+import kz.mybrain.superkassa.core.data.receipt.renderer.ZReportRenderer
 import kz.mybrain.superkassa.core.domain.model.FiscalDocumentSnapshot
+import kz.mybrain.superkassa.core.domain.model.KkmInfo
+import kz.mybrain.superkassa.core.domain.model.ReceiptBranding
 import kz.mybrain.superkassa.core.domain.model.ShiftInfo
 import kz.mybrain.superkassa.core.domain.model.ShiftStatus
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
 class ReportPrintRendererTest {
+
+    private val kkm = KkmInfo(
+        id = "kkm-123",
+        createdAt = 1782200000000L,
+        updatedAt = 1782200000000L,
+        mode = "PRODUCTION",
+        state = "READY",
+        branding = ReceiptBranding()
+    )
+
+    private val xRenderer = XReportRenderer()
+    private val zRenderer = ZReportRenderer()
+    private val openShiftRenderer = OpenShiftRenderer()
+    private val cashOperationRenderer = CashOperationRenderer()
 
     @Test
     fun testRenderXReportHtml() {
@@ -24,15 +44,16 @@ class ReportPrintRendererTest {
             "operation.OPERATION_SELL_RETURN.sum" to 0L
         )
 
-        val html = ReportPrintRenderer.renderXReportHtml(shift, counters)
-        assertTrue(html.contains("X-ОТЧЁТ"))
-        assertTrue(html.contains("Смена № / Ауысым №"))
-        assertTrue(html.contains("12"))
-        assertTrue(html.contains("Продажа / Сату"))
-        assertTrue(html.contains("10"))
-        assertTrue(html.contains("1000.50"))
+        val html = xRenderer.render(shift, counters, kkm, null)
+        val cleanHtml = stripHtml(html)
+        assertTrue(cleanHtml.contains("X-ОТЧЁТ"))
+        assertTrue(cleanHtml.contains("Ауысым № / Смена №"))
+        assertTrue(cleanHtml.contains("12"))
+        assertTrue(cleanHtml.contains("Сату / Продажа"))
+        assertTrue(cleanHtml.contains("10"))
+        assertTrue(cleanHtml.contains("1000.50"))
         // 0 counters should be omitted from output
-        assertTrue(!html.contains("Возврат продажи"))
+        assertTrue(!cleanHtml.contains("Возврат продажи"))
     }
 
     @Test
@@ -44,8 +65,9 @@ class ReportPrintRendererTest {
             status = ShiftStatus.OPEN,
             openedAt = 1782200000000L
         )
-        val html = ReportPrintRenderer.renderXReportHtml(shift, emptyMap())
-        assertTrue(html.contains("Нет данных / Деректер жоқ"))
+        val html = xRenderer.render(shift, emptyMap(), kkm, null)
+        val cleanHtml = stripHtml(html)
+        assertTrue(cleanHtml.contains("Деректер жоқ / Нет данных"))
     }
 
     @Test
@@ -57,10 +79,12 @@ class ReportPrintRendererTest {
             status = ShiftStatus.OPEN,
             openedAt = 1782200000000L
         )
-        val html = ReportPrintRenderer.renderOpenShiftHtml(shift)
-        assertTrue(html.contains("ОТКРЫТИЕ СМЕНЫ / АУЫСЫМДЫ АШУ"))
-        assertTrue(html.contains("Смена № / Ауысым №"))
-        assertTrue(html.contains("12"))
+        val html = openShiftRenderer.render(shift, kkm, null)
+        val cleanHtml = stripHtml(html)
+        assertTrue(cleanHtml.contains("АУЫСЫМДЫ АШУ"))
+        assertTrue(cleanHtml.contains("ОТКРЫТИЕ СМЕНЫ"))
+        assertTrue(cleanHtml.contains("Ауысым № / Смена №"))
+        assertTrue(cleanHtml.contains("12"))
     }
 
     @Test
@@ -78,12 +102,14 @@ class ReportPrintRendererTest {
             "operation.OPERATION_SELL.sum" to 100050L
         )
 
-        val html = ReportPrintRenderer.renderCloseShiftHtml(shift, counters)
-        assertTrue(html.contains("Z-ОТЧЁТ (ЗАКРЫТИЕ СМЕНЫ)"))
-        assertTrue(html.contains("Смена № / Ауысым №"))
-        assertTrue(html.contains("12"))
-        assertTrue(html.contains("Продажа / Сату"))
-        assertTrue(html.contains("1000.50"))
+        val html = zRenderer.render(shift, counters, kkm, "DELIVERED")
+        val cleanHtml = stripHtml(html)
+        assertTrue(cleanHtml.contains("Z-ЕСЕП (АУЫСЫМДЫ ЖАБУ)"))
+        assertTrue(cleanHtml.contains("Z-ОТЧЁТ (ЗАКРЫТИЕ СМЕНЫ)"))
+        assertTrue(cleanHtml.contains("Ауысым № / Смена №"))
+        assertTrue(cleanHtml.contains("12"))
+        assertTrue(cleanHtml.contains("Сату / Продажа"))
+        assertTrue(cleanHtml.contains("1000.50"))
     }
 
     @Test
@@ -96,9 +122,10 @@ class ReportPrintRendererTest {
             openedAt = 1782200000000L,
             closedAt = null
         )
-        val html = ReportPrintRenderer.renderCloseShiftHtml(shift, emptyMap())
-        assertTrue(html.contains("Закрыта / Жабылған күні"))
-        assertTrue(html.contains("-"))
+        val html = zRenderer.render(shift, emptyMap(), kkm, null)
+        val cleanHtml = stripHtml(html)
+        assertTrue(cleanHtml.contains("Жабылған күні / Закрыта"))
+        assertTrue(cleanHtml.contains("-"))
     }
 
     @Test
@@ -120,10 +147,11 @@ class ReportPrintRendererTest {
             deliveredAt = null
         )
 
-        val htmlIn = ReportPrintRenderer.renderCashOperationHtml(docIn)
-        assertTrue(htmlIn.contains("ВНЕСЕНИЕ НАЛИЧНЫХ"))
-        assertTrue(htmlIn.contains("2500.00 KZT") || htmlIn.contains("2500,00 KZT"))
-        assertTrue(htmlIn.contains("Документ № / Құжат №"))
+        val htmlIn = cashOperationRenderer.render(docIn, kkm)
+        val cleanHtmlIn = stripHtml(htmlIn)
+        assertTrue(cleanHtmlIn.contains("ВНЕСЕНИЕ НАЛИЧНЫХ"))
+        assertTrue(cleanHtmlIn.contains("2500.00 KZT") || cleanHtmlIn.contains("2500,00 KZT"))
+        assertTrue(cleanHtmlIn.contains("Құжат № / Документ №"))
 
         val docOut = FiscalDocumentSnapshot(
             id = "doc-2",
@@ -142,9 +170,10 @@ class ReportPrintRendererTest {
             deliveredAt = null
         )
 
-        val htmlOut = ReportPrintRenderer.renderCashOperationHtml(docOut)
-        assertTrue(htmlOut.contains("ИЗЪЯТИЕ НАЛИЧНЫХ"))
-        assertTrue(htmlOut.contains("100.00 KZT") || htmlOut.contains("100,00 KZT"))
+        val htmlOut = cashOperationRenderer.render(docOut, kkm)
+        val cleanHtmlOut = stripHtml(htmlOut)
+        assertTrue(cleanHtmlOut.contains("ИЗЪЯТИЕ НАЛИЧНЫХ"))
+        assertTrue(cleanHtmlOut.contains("100.00 KZT") || cleanHtmlOut.contains("100,00 KZT"))
 
         val docOther = FiscalDocumentSnapshot(
             id = "doc-3",
@@ -163,8 +192,13 @@ class ReportPrintRendererTest {
             deliveredAt = null
         )
 
-        val htmlOther = ReportPrintRenderer.renderCashOperationHtml(docOther)
-        assertTrue(htmlOther.contains("ОПЕРАЦИЯ С НАЛИЧНЫМИ"))
-        assertTrue(htmlOther.contains("0.00 KZT"))
+        val htmlOther = cashOperationRenderer.render(docOther, kkm)
+        val cleanHtmlOther = stripHtml(htmlOther)
+        assertTrue(cleanHtmlOther.contains("ОПЕРАЦИЯ С НАЛИЧНЫМИ"))
+        assertTrue(cleanHtmlOther.contains("0.00 KZT"))
+    }
+
+    private fun stripHtml(html: String): String {
+        return html.replace(Regex("<[^>]*>"), "")
     }
 }
