@@ -28,7 +28,8 @@ class CashOperationRenderer : BaseDocumentRenderer() {
         val ofdStatusHtml = when (doc.ofdStatus) {
             "DELIVERED", "SENT" -> "<span class=\"badge badge-success\">${t("Отправлен", "Жіберілді")}</span>"
             "PENDING", "OFFLINE" -> "<span class=\"badge badge-warning\">${t("Офлайн", "Автономды")}</span>"
-            else -> ReceiptFormatter.escape(doc.ofdStatus ?: "-")
+            "FAILED", "ERROR" -> "<span class=\"badge badge-error\">${t("Ошибка", "Қате")}</span>"
+            else -> "<span class=\"badge badge-warning\">${ReceiptFormatter.escape(doc.ofdStatus ?: "-")}</span>"
         }
 
         val registrationNumber = doc.registrationNumber ?: kkm.registrationNumber ?: "-"

@@ -962,14 +962,44 @@ class ReceiptHtmlRendererTest {
                     renderer.renderCloseShiftHtml(shiftClose, counters, kkmForFolder.copy(branding = folderBranding.copy(language = ReceiptLanguage.KK)), null)
                 )
 
+                // 8c. Offline Z-Report
+                reportsDir.resolve("z_report_offline.html").writeText(
+                    renderer.renderCloseShiftHtml(shiftClose, counters, kkmForFolder, "PENDING")
+                )
+
+                // 8d. Failed Z-Report
+                reportsDir.resolve("z_report_failed.html").writeText(
+                    renderer.renderCloseShiftHtml(shiftClose, counters, kkmForFolder, "ERROR")
+                )
+
                 // 9. Cash In
                 operationsDir.resolve("cash_in.html").writeText(
                     renderer.renderCashOperationHtml(docCashIn, kkmForFolder)
                 )
 
+                // 9a. Offline Cash In
+                operationsDir.resolve("cash_in_offline.html").writeText(
+                    renderer.renderCashOperationHtml(docCashIn.copy(ofdStatus = "PENDING"), kkmForFolder)
+                )
+
+                // 9b. Failed Cash In
+                operationsDir.resolve("cash_in_failed.html").writeText(
+                    renderer.renderCashOperationHtml(docCashIn.copy(ofdStatus = "ERROR"), kkmForFolder)
+                )
+
                 // 10. Cash Out
                 operationsDir.resolve("cash_out.html").writeText(
                     renderer.renderCashOperationHtml(docCashOut, kkmForFolder)
+                )
+
+                // 10a. Offline Cash Out
+                operationsDir.resolve("cash_out_offline.html").writeText(
+                    renderer.renderCashOperationHtml(docCashOut.copy(ofdStatus = "PENDING"), kkmForFolder)
+                )
+
+                // 10b. Failed Cash Out
+                operationsDir.resolve("cash_out_failed.html").writeText(
+                    renderer.renderCashOperationHtml(docCashOut.copy(ofdStatus = "ERROR"), kkmForFolder)
                 )
 
                 // 11. Kazakh-only Sale Receipt
