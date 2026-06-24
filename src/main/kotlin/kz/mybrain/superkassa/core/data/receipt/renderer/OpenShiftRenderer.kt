@@ -16,7 +16,8 @@ class OpenShiftRenderer : BaseDocumentRenderer() {
         fun t(ru: String, kk: String, sep: String = " / "): String = translate(ru, kk, lang, sep, isNarrow)
 
         val docTitle = t("ОТКРЫТИЕ СМЕНЫ", "АУЫСЫМДЫ АШУ", sep = "<br/>")
-        val ofdStatusHtml = "<span class=\"badge badge-warning\">${t("Не фискальный", "Фискальді емес")}</span>"
+        val fiscalStatusHtml = renderStatusBadge("warning", "Не фискальный", "Фискальді емес", lang)
+        val transmissionHtml = renderStatusBadge("neutral", "Не передается", "Жіберілмейді", lang)
 
         val registrationNumber = kkm.registrationNumber ?: "-"
         val factoryNumber = kkm.factoryNumber ?: "-"
@@ -32,7 +33,8 @@ class OpenShiftRenderer : BaseDocumentRenderer() {
                 <tr><td>${t("РНМ", "ТНМ")}</td><td>${ReceiptFormatter.escape(registrationNumber)}</td></tr>
                 <tr><td>${t("ЗНМ", "ЗНМ")}</td><td>${ReceiptFormatter.escape(factoryNumber)}</td></tr>
                 <tr><td>${t("Время открытия", "Ашу уақыты")}</td><td>${formatDate(shift.openedAt)}</td></tr>
-                <tr><td>${t("Статус ОФД", "ОФД статусы")}</td><td>$ofdStatusHtml</td></tr>
+                <tr><td>${t("Фискальный статус", "Фискальді мәртебесі")}</td><td>$fiscalStatusHtml</td></tr>
+                <tr><td>${t("Передача в ОФД", "ОФД-ға жіберу")}</td><td>$transmissionHtml</td></tr>
             </table>
             <div class="rule"></div>
             <div class="footer center">

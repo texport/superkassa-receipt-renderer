@@ -14,10 +14,10 @@ class ZReportRenderer : ZxReportCommonRenderer() {
         val lang = kkm.branding.language
         val status = ofdStatus ?: "DELIVERED"
         val ofdStatusHtml = when (status) {
-            "DELIVERED", "SENT" -> "<span class=\"badge badge-success\">${translate("Отправлен", "Жіберілді", lang)}</span>"
-            "PENDING", "OFFLINE" -> "<span class=\"badge badge-warning\">${translate("Офлайн", "Автономды", lang)}</span>"
-            "FAILED", "ERROR" -> "<span class=\"badge badge-error\">${translate("Ошибка", "Қате", lang)}</span>"
-            else -> "<span class=\"badge badge-warning\">$status</span>"
+            "DELIVERED", "SENT" -> renderStatusBadge("success", "Отправлен", "Жіберілді", lang)
+            "PENDING", "OFFLINE" -> renderStatusBadge("warning", "Офлайн", "Автономды", lang)
+            "FAILED", "ERROR" -> renderStatusBadge("error", "Ошибка", "Қате", lang)
+            else -> renderStatusBadge("warning", status, status, lang)
         }
         return renderZxReportHtml(
             titleRu = "Z-ОТЧЁТ (ЗАКРЫТИЕ СМЕНЫ)",

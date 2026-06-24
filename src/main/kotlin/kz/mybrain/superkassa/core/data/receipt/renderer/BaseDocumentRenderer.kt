@@ -31,6 +31,25 @@ abstract class BaseDocumentRenderer {
         }
     }
 
+    protected fun renderStatusBadge(
+        classSuffix: String,
+        labelRu: String,
+        labelKk: String,
+        lang: ReceiptLanguage
+    ): String {
+        return when (lang) {
+            ReceiptLanguage.RU -> "<span class=\"badge badge-$classSuffix\">$labelRu</span>"
+            ReceiptLanguage.KK -> "<span class=\"badge badge-$classSuffix\">$labelKk</span>"
+            ReceiptLanguage.MIXED -> {
+                "<span class=\"badge badge-$classSuffix\">" +
+                        "<span class=\"badge-main\">$labelKk</span>" +
+                        "<span class=\"badge-divider\"></span>" +
+                        "<span class=\"badge-sub\">$labelRu</span>" +
+                        "</span>"
+            }
+        }
+    }
+
     protected fun formatAmount(bills: Long): String =
         String.format(java.util.Locale.US, "%.2f", bills.toDouble() / 100.0)
 
@@ -39,7 +58,7 @@ abstract class BaseDocumentRenderer {
         val widthMm = kkm.branding.paperWidthMm
         val widthClass = "tape-${widthMm}mm"
         val customCss = kkm.branding.customCss ?: ""
-        val themeColor = kkm.branding.themeColor ?: "indigo"
+        val themeColor = kkm.branding.themeColor
         val themeMode = if (customCss.contains("/* force-dark */") || customCss.contains("theme-dark")) "dark" else "light"
         val bodyClass = "$themeMode accent-$themeColor"
         return """

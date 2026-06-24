@@ -490,15 +490,36 @@ object ReceiptHtmlStyles {
                     letter-spacing: 0.5px;
                 }
                 .badge {
-                    display: inline-block;
-                    padding: 4px 12px;
-                    font-size: 0.85em;
+                    display: inline-flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 6px 14px;
+                    font-size: 0.8em;
                     font-weight: 700;
-                    border-radius: 100px;
+                    border-radius: 10px;
                     text-transform: uppercase;
                     letter-spacing: 0.5px;
+                    line-height: 1.15;
+                    text-align: center;
                     box-shadow: 0 2px 4px rgba(99, 102, 241, 0.05);
                     box-shadow: 0 2px 4px var(--m3-shadow);
+                }
+                .badge-main {
+                    display: block;
+                }
+                .badge-divider {
+                    display: block;
+                    width: 100%;
+                    height: 1px;
+                    margin: 3px 0;
+                    background-color: currentColor;
+                    opacity: 0.25;
+                }
+                .badge-sub {
+                    display: block;
+                    font-size: 0.85em;
+                    opacity: 0.8;
                 }
                 .badge-success {
                     background-color: #d1fae5;
@@ -517,6 +538,12 @@ object ReceiptHtmlStyles {
                     background-color: var(--m3-error-container);
                     color: #991b1b;
                     color: var(--m3-on-error-container);
+                }
+                .badge-neutral {
+                    background-color: #e2e8f0;
+                    background-color: var(--m3-surface-variant);
+                    color: #475569;
+                    color: var(--m3-on-surface-variant);
                 }
                 .bold { font-weight: 700; }
                 

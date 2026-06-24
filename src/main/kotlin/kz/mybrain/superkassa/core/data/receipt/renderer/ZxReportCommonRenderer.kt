@@ -48,7 +48,17 @@ abstract class ZxReportCommonRenderer : BaseDocumentRenderer() {
                 <tr><td>${t("Открыта", "Ашылған күні")}</td><td>${formatDate(reportInput.openShiftTimeMillis)}</td></tr>
                 $closedRow
                 <tr><td>${t("Время отчета", "Есеп уақыты")}</td><td>${formatDate(reportInput.dateTimeMillis)}</td></tr>
-                <tr><td>${t("Статус ОФД", "ОФД статусы")}</td><td>$ofdStatusHtml</td></tr>
+                ${
+                    if (isZReport) {
+                        "<tr><td>${t("Статус ОФД", "ОФД статусы")}</td><td>$ofdStatusHtml</td></tr>"
+                    } else {
+                        val transmissionHtml = renderStatusBadge("neutral", "Не передается", "Жіберілмейді", lang)
+                        """
+                        <tr><td>${t("Фискальный статус", "Фискальді мәртебесі")}</td><td>$ofdStatusHtml</td></tr>
+                        <tr><td>${t("Передача в ОФД", "ОФД-ға жіберу")}</td><td>$transmissionHtml</td></tr>
+                        """.trimIndent()
+                    }
+                }
             </table>
         """.trimIndent()
 

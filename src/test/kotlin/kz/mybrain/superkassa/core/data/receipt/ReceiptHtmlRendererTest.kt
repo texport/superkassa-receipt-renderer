@@ -204,7 +204,7 @@ class ReceiptHtmlRendererTest {
         assertTrue(cleanHtml.contains("«Қазақтелеком» АҚ / АО «Казахтелеком»"))
         assertTrue(cleanHtml.contains("oofd.kz"))
         assertTrue(html.contains("data:image/png;base64,stub-qr-code-for-https://kassa.kz/receipt/789"))
-        assertTrue(cleanHtml.contains("Жіберілді / Отправлен"))
+        assertTrue(cleanHtml.contains("Жіберілді") && cleanHtml.contains("Отправлен"))
         // Check for VAT Groups (should be empty since defaultVatGroup is NO_VAT under VAT_PAYER)
         assertTrue(!cleanHtml.contains("Налоги / Салықтар"))
     }
@@ -260,7 +260,7 @@ class ReceiptHtmlRendererTest {
 
         assertTrue(cleanHtml.contains("САТУДЫ ҚАЙТАРУ ЧЕГІ"))
         assertTrue(cleanHtml.contains("ЧЕК ВОЗВРАТА ПРОДАЖИ"))
-        assertTrue(cleanHtml.contains("Автономды / Офлайн"))
+        assertTrue(cleanHtml.contains("Автономды") && cleanHtml.contains("Офлайн"))
         assertTrue(cleanHtml.contains("Автономды режим / Автономный режим"))
         assertTrue(cleanHtml.contains("«Транстелеком» АҚ / АО «Транстелеком»"))
         assertTrue(cleanHtml.contains("o.oofd.kz"))

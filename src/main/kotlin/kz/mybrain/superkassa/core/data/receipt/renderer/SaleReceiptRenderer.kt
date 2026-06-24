@@ -32,10 +32,10 @@ class SaleReceiptRenderer(
         val qrDataUri = receiptUrl?.let { qrCodeGenerator.generatePngDataUri(it, QR_CODE_SIZE_PX) }
 
         val ofdStatusHtml = when (doc.ofdStatus) {
-            "DELIVERED", "SENT" -> "<span class=\"badge badge-success\">${t("Отправлен", "Жіберілді")}</span>"
-            "PENDING", "OFFLINE" -> "<span class=\"badge badge-warning\">${t("Офлайн", "Автономды")}</span>"
-            "FAILED", "ERROR" -> "<span class=\"badge badge-error\">${t("Ошибка", "Қате")}</span>"
-            else -> "<span class=\"badge badge-warning\">${ReceiptFormatter.escape(doc.ofdStatus ?: "-")}</span>"
+            "DELIVERED", "SENT" -> renderStatusBadge("success", "Отправлен", "Жіберілді", lang)
+            "PENDING", "OFFLINE" -> renderStatusBadge("warning", "Офлайн", "Автономды", lang)
+            "FAILED", "ERROR" -> renderStatusBadge("error", "Ошибка", "Қате", lang)
+            else -> renderStatusBadge("warning", doc.ofdStatus ?: "-", doc.ofdStatus ?: "-", lang)
         }
 
         val currency = doc.currency ?: "KZT"
