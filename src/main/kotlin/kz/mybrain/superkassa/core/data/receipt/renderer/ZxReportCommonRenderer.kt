@@ -63,7 +63,7 @@ abstract class ZxReportCommonRenderer : BaseDocumentRenderer() {
         """.trimIndent()
 
         // 2. Operations (Продажи, Возвраты, Покупки, Возвраты покупок)
-        val operationsCards = reportInput.operations.filter { it.count > 0L || it.sumBills > 0L }.joinToString("") { op ->
+        val operationsCards = reportInput.operations.joinToString("") { op ->
             val label = when (op.operation) {
                 "OPERATION_SELL" -> t("Продажа", "Сату")
                 "OPERATION_SELL_RETURN" -> t("Возврат продажи", "Сатуды қайтару")
@@ -84,12 +84,6 @@ abstract class ZxReportCommonRenderer : BaseDocumentRenderer() {
                 </table>
             </div>
             """.trimIndent()
-        }.ifEmpty {
-            """
-            <div class="tax-row-card">
-                <div class="center muted">${t("Нет данных", "Деректер жоқ")}</div>
-            </div>
-            """.trimIndent()
         }
 
         val operationsHtml = """
@@ -100,9 +94,9 @@ abstract class ZxReportCommonRenderer : BaseDocumentRenderer() {
         """.trimIndent()
 
         // 3. Section totals (Отделы)
-        val sectionHtml = if (reportInput.sections.isNotEmpty() && reportInput.sections.any { s -> s.operations.any { it.count > 0 || it.sumBills > 0 } }) {
+        val sectionHtml = if (reportInput.sections.isNotEmpty()) {
             val secCards = reportInput.sections.flatMap { sec ->
-                sec.operations.filter { it.count > 0 || it.sumBills > 0 }.map { op ->
+                sec.operations.map { op ->
                     val label = when (op.operation) {
                         "OPERATION_SELL" -> t("Продажа", "Сату")
                         "OPERATION_SELL_RETURN" -> t("Возврат продажи", "Сатуды қайтару")
@@ -136,7 +130,7 @@ abstract class ZxReportCommonRenderer : BaseDocumentRenderer() {
         }
 
         // 4. Discounts and markups
-        val discountCards = reportInput.discounts.filter { it.sumBills > 0L }.map { op ->
+        val discountCards = reportInput.discounts.map { op ->
             val label = when (op.operation) {
                 "OPERATION_SELL" -> t("Скидки продаж", "Сату жеңілдіктері")
                 "OPERATION_SELL_RETURN" -> t("Скидки возвр. продаж", "Сатуды қайтару жеңілдіктері")
@@ -155,7 +149,7 @@ abstract class ZxReportCommonRenderer : BaseDocumentRenderer() {
             </div>
             """.trimIndent()
         }
-        val markupCards = reportInput.markups.filter { it.sumBills > 0L }.map { op ->
+        val markupCards = reportInput.markups.map { op ->
             val label = when (op.operation) {
                 "OPERATION_SELL" -> t("Наценки продаж", "Сату үстемелері")
                 "OPERATION_SELL_RETURN" -> t("Наценки возвр. продаж", "Сатуды қайтару үстемелері")
@@ -174,20 +168,16 @@ abstract class ZxReportCommonRenderer : BaseDocumentRenderer() {
             </div>
             """.trimIndent()
         }
-        val discountsMarkupsHtml = if (discountCards.isNotEmpty() || markupCards.isNotEmpty()) {
-            """
+        val discountsMarkupsHtml = """
             <div class="section-title">${t("Скидки и наценки", "Жеңілдіктер мен үстемелер")}</div>
             <div class="taxes-list">
                 ${discountCards.joinToString("")}
                 ${markupCards.joinToString("")}
             </div>
-            """.trimIndent()
-        } else {
-            ""
-        }
+        """.trimIndent()
 
         // 5. Total result
-        val totalResultCards = reportInput.totalResult.filter { it.count > 0L || it.sumBills > 0L }.joinToString("") { op ->
+        val totalResultCards = reportInput.totalResult.joinToString("") { op ->
             val label = when (op.operation) {
                 "OPERATION_SELL" -> t("Итого продаж", "Сату қорытындысы")
                 "OPERATION_SELL_RETURN" -> t("Итого возвр. продаж", "Сатуды қайтару қорытындысы")
@@ -209,16 +199,12 @@ abstract class ZxReportCommonRenderer : BaseDocumentRenderer() {
             </div>
             """.trimIndent()
         }
-        val totalResultHtml = if (totalResultCards.isNotEmpty()) {
-            """
+        val totalResultHtml = """
             <div class="section-title">${t("Окончательные итоги", "Соңғы қорытындылар")}</div>
             <div class="taxes-list">
                 $totalResultCards
             </div>
-            """.trimIndent()
-        } else {
-            ""
-        }
+        """.trimIndent()
 
         // 6. Taxes (Налоги)
         val taxCards = reportInput.taxes.flatMap { taxAgg ->
@@ -231,7 +217,7 @@ abstract class ZxReportCommonRenderer : BaseDocumentRenderer() {
                 "TAX_TYPE_NO_VAT" -> t("Без НДС", "ҚҚС-сыз")
                 else -> taxAgg.taxTypeCode
             }
-            taxAgg.operations.filter { it.turnoverBills > 0L || it.taxSumBills > 0L }.map { op ->
+            taxAgg.operations.map { op ->
                 val opLabel = when (op.operation) {
                     "OPERATION_SELL" -> t("Продажа", "Сату")
                     "OPERATION_SELL_RETURN" -> t("Возврат продажи", "Сатуды қайтару")
@@ -254,19 +240,15 @@ abstract class ZxReportCommonRenderer : BaseDocumentRenderer() {
                 """.trimIndent()
             }
         }.joinToString("")
-        val taxesHtml = if (taxCards.isNotEmpty()) {
-            """
+        val taxesHtml = """
             <div class="section-title">${t("Налоги по операциям", "Операциялар бойынша салықтар")}</div>
             <div class="taxes-list">
                 $taxCards
             </div>
-            """.trimIndent()
-        } else {
-            ""
-        }
+        """.trimIndent()
 
         // 7. Payment types summary
-        val paymentSectionsHtml = reportInput.ticketOperations.filter { it.ticketsCount > 0L || it.ticketsSumBills > 0L }.joinToString("") { op ->
+        val paymentSectionsHtml = reportInput.ticketOperations.joinToString("") { op ->
             val opLabel = when (op.operation) {
                 "OPERATION_SELL" -> t("Продажи", "Сату")
                 "OPERATION_SELL_RETURN" -> t("Возвраты продаж", "Сатуды қайтару")
@@ -274,7 +256,7 @@ abstract class ZxReportCommonRenderer : BaseDocumentRenderer() {
                 "OPERATION_BUY_RETURN" -> t("Возвраты покупок", "Сатып алуды қайтару")
                 else -> op.operation
             }
-            val payRows = op.payments.filter { it.sumBills > 0L || it.count > 0L }.joinToString("") { pay ->
+            val payRows = op.payments.joinToString("") { pay ->
                 val payLabel = when (pay.payment) {
                     "PAYMENT_CASH" -> t("Наличные", "Қолма-қол")
                     "PAYMENT_CARD" -> t("Карта", "Карта")
@@ -312,16 +294,12 @@ abstract class ZxReportCommonRenderer : BaseDocumentRenderer() {
             </div>
             """.trimIndent()
         }
-        val paymentsSummaryHtml = if (paymentSectionsHtml.isNotEmpty()) {
-            """
+        val paymentsSummaryHtml = """
             <div class="section-title">${t("Типы расчетов", "Төлем түрлері")}</div>
             <div class="taxes-list">
                 $paymentSectionsHtml
             </div>
-            """.trimIndent()
-        } else {
-            ""
-        }
+        """.trimIndent()
 
         // 8. Non-nullable sums
         val nonNullableCards = mutableListOf<String>()

@@ -52,8 +52,9 @@ class ReportPrintRendererTest {
         assertTrue(cleanHtml.contains("Сату / Продажа"))
         assertTrue(cleanHtml.contains("10"))
         assertTrue(cleanHtml.contains("1000.50"))
-        // 0 counters should be omitted from output
-        assertTrue(!cleanHtml.contains("Возврат продажи"))
+        // Zero counters should be displayed with 0.00 value
+        assertTrue(cleanHtml.contains("Возврат продажи"))
+        assertTrue(cleanHtml.contains("0.00"))
     }
 
     @Test
@@ -67,7 +68,8 @@ class ReportPrintRendererTest {
         )
         val html = xRenderer.render(shift, emptyMap(), kkm, null)
         val cleanHtml = stripHtml(html)
-        assertTrue(cleanHtml.contains("Деректер жоқ / Нет данных"))
+        assertTrue(cleanHtml.contains("Сату / Продажа"))
+        assertTrue(cleanHtml.contains("0.00"))
     }
 
     @Test
