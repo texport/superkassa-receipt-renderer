@@ -903,10 +903,16 @@ class ReceiptHtmlRendererTest {
                 )
                 val kkmForFolder = baseKkm.copy(branding = folderBranding)
 
-                // 1. Standard Sale Receipt
+                // 1. Standard Sale Receipt (plus accent colors showcase)
                 salesDir.resolve("sale_receipt.html").writeText(
                     renderer.renderHtml(request1, doc1, kkmForFolder)
                 )
+                val accentColors = listOf("indigo", "teal", "green", "blue", "orange", "rose")
+                for (color in accentColors) {
+                    salesDir.resolve("sale_receipt_accent_$color.html").writeText(
+                        renderer.renderHtml(request1, doc1, kkmForFolder.copy(branding = folderBranding.copy(themeColor = color)))
+                    )
+                }
 
                 // 2. Mixed Payment, VAT 16%, discounts
                 salesDir.resolve("sale_with_vat_and_discounts.html").writeText(
@@ -918,19 +924,37 @@ class ReceiptHtmlRendererTest {
                     renderer.renderHtml(request2ItemDiscountOnly, doc2, kkmForFolder)
                 )
 
-                // 3. Refund Sale Receipt
+                // 3. Refund Sale Receipt (Online, Offline, Failed)
                 refundSalesDir.resolve("refund_sale_receipt.html").writeText(
                     renderer.renderHtml(request3, doc3, kkmForFolder)
                 )
+                refundSalesDir.resolve("refund_sale_receipt_offline.html").writeText(
+                    renderer.renderHtml(request3, doc3.copy(ofdStatus = "PENDING"), kkmForFolder)
+                )
+                refundSalesDir.resolve("refund_sale_receipt_failed.html").writeText(
+                    renderer.renderHtml(request3, doc3.copy(ofdStatus = "ERROR"), kkmForFolder)
+                )
 
-                // 4. Purchase Receipt
+                // 4. Purchase Receipt (Online, Offline, Failed)
                 buysDir.resolve("buy_receipt.html").writeText(
                     renderer.renderHtml(request4, doc4, kkmForFolder)
                 )
+                buysDir.resolve("buy_receipt_offline.html").writeText(
+                    renderer.renderHtml(request4, doc4.copy(ofdStatus = "PENDING"), kkmForFolder)
+                )
+                buysDir.resolve("buy_receipt_failed.html").writeText(
+                    renderer.renderHtml(request4, doc4.copy(ofdStatus = "ERROR"), kkmForFolder)
+                )
 
-                // 5. Refund Purchase Receipt
+                // 5. Refund Purchase Receipt (Online, Offline, Failed)
                 refundBuysDir.resolve("refund_buy_receipt.html").writeText(
                     renderer.renderHtml(request5, doc5, kkmForFolder)
+                )
+                refundBuysDir.resolve("refund_buy_receipt_offline.html").writeText(
+                    renderer.renderHtml(request5, doc5.copy(ofdStatus = "PENDING"), kkmForFolder)
+                )
+                refundBuysDir.resolve("refund_buy_receipt_failed.html").writeText(
+                    renderer.renderHtml(request5, doc5.copy(ofdStatus = "ERROR"), kkmForFolder)
                 )
 
                 // 6. Open Shift
