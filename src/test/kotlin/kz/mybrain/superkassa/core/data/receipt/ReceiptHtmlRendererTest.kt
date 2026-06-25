@@ -202,7 +202,6 @@ class ReceiptHtmlRendererTest {
         assertTrue(cleanHtml.contains("ЗНМ"))
         assertTrue(cleanHtml.contains("FN-888"))
         assertTrue(cleanHtml.contains("«Қазақтелеком» АҚ / АО «Казахтелеком»"))
-        assertTrue(cleanHtml.contains("oofd.kz"))
         assertTrue(html.contains("data:image/png;base64,stub-qr-code-for-https://kassa.kz/receipt/789"))
         assertTrue(cleanHtml.contains("Жіберілді") && cleanHtml.contains("Отправлен"))
         // Check for VAT Groups (should be empty since defaultVatGroup is NO_VAT under VAT_PAYER)
@@ -325,7 +324,6 @@ class ReceiptHtmlRendererTest {
         assertTrue(cleanHtml.contains("ЧЕК ПОКУПКИ"))
         assertTrue(cleanHtml.contains("UNKNOWN_STATUS"))
         assertTrue(cleanHtml.contains("«Alteco Partners» ЖШС / ТОО «Alteco Partners»"))
-        assertTrue(cleanHtml.contains("alteco.kz"))
         // Since Qr generator returns null, no qr img tag should be present
         assertTrue(!html.contains("<img src=\"\""))
     }
@@ -373,7 +371,6 @@ class ReceiptHtmlRendererTest {
         assertTrue(cleanHtml.contains("САТЫП АЛУДЫ ҚАЙТАРУ ЧЕГІ"))
         assertTrue(cleanHtml.contains("ЧЕК ВОЗВРАТА ПОКУПКИ"))
         assertTrue(cleanHtml.contains("SOME_OTHER_PROVIDER"))
-        assertTrue(cleanHtml.contains("consumer.oofd.kz"))
     }
 
     @Test

@@ -217,8 +217,6 @@ class SaleReceiptRenderer(
             translate(it.nameRu, it.nameKk, lang, isNarrow = isNarrow)
         } ?: ReceiptFormatter.escape(doc.ofdProvider ?: "-")
 
-        val ofdWebSite = providerConfig?.website ?: "consumer.oofd.kz"
-
         val qrCodeHtml = if (!qrDataUri.isNullOrBlank()) {
             """
             <div class="qr">
@@ -315,7 +313,6 @@ class SaleReceiptRenderer(
             <table class="meta-table">
                 <tr><td>${t("Фискальный признак:", "Фискалдық белгі:")}</td><td class="bold">$escapedSign</td></tr>
                 <tr><td>${t("ОФД:", "ОФД:")}</td><td>$ofdProviderName</td></tr>
-                <tr><td>${t("Сайт проверки:", "Тексеру сайты:")}</td><td>$ofdWebSite</td></tr>
             </table>
             $customerBinHtml
             $autonomousModeHtml
