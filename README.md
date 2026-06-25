@@ -24,8 +24,8 @@ It handles rendering of sale and return receipts, cash operations (in/out), shif
 - **Print & Paper Roll Sizing Enforcements**:
   - Automatically forces clean black-and-white print styles in print-media queries (`@media print`) to eliminate background colors and save ink/toner.
   - Dynamically sets page layouts (`@page size`) and container dimensions for standard POS roll sizes: **80mm** (standard wide POS tape) and **58mm** (narrow mobile POS tape, auto-adjusting font size and margins to prevent squeeze and overlaps).
-- **Branding & Visual Editor Support**: Includes custom header/footer HTML embedding, logo loading, custom CSS injection, and a dedicated mockup preview rendering API (`renderPreviewHtml`).
-- **QR Code & Signature Integration**: Generates print-ready QR codes linking to OOFD check verification portals with dynamic domain name resolution depending on the provider (Kazakhtelecom, Transtelecom, Alteco).
+- **Expanded Branding & Visual Editor Support**: Includes custom slots for embedding HTML fragments, custom color accent override (`themeColor`), logo loading, custom CSS injection, and a dedicated mockup preview rendering API (`renderPreviewHtml`).
+- **Dynamic OFD Registry**: Supports custom OFD providers mapping (e.g. Kazakhtelecom, Transtelecom, Alteco Partners) to resolve company names and verify domains automatically.
 
 ---
 
@@ -43,12 +43,17 @@ dependencies {
 
 ### Usage Example
 
+#### 1. Receipts Rendering (Sale / Return / Buy / Refund Buy)
+
 ```kotlin
 import kz.mybrain.superkassa.core.data.receipt.ReceiptHtmlRenderer
 import kz.mybrain.superkassa.core.domain.model.*
 
 // 1. Instantiate renderer with a QR code generator adapter
-val renderer = ReceiptHtmlRenderer(myQrCodeGeneratorImpl)
+val renderer = ReceiptHtmlRenderer(
+    qrCodeGenerator = myQrCodeGeneratorImpl,
+    ofdProviders = ReceiptHtmlRenderer.defaultOfdProviders // customize if needed
+)
 
 // 2. Prepare mock/real KkmInfo with branding config
 val kkmInfo = KkmInfo(
@@ -60,12 +65,23 @@ val kkmInfo = KkmInfo(
     registrationNumber = "RN-999999",
     factoryNumber = "FN-888888",
     branding = ReceiptBranding(
-        language = ReceiptLanguage.MIXED,               // RU, KK, or MIXED
-        headerLogoUrl = "https://mysite.com/logo.png",   // Optional logo
-        headerHtml = "<div>Welcome to Store!</div>",     // Optional top header HTML
-        footerHtml = "<div>Thank you!</div>",            // Optional bottom footer HTML
-        customCss = ".doc-title { color: #6200EE; }",    // Optional CSS overrides
-        paperWidthMm = 58                                // 58 or 80 (default)
+        language = ReceiptLanguage.MIXED,               // RU, KK, or MIXED (Kazakh first)
+        paperWidthMm = 58,                               // 58 (narrow POS tape) or 80 (default)
+        themeColor = "#4f46e5",                          // Custom brand color accent (hex)
+        headerLogoUrl = "https://mysite.com/logo.png",   // Optional logo URL
+        
+        // Custom HTML insertion slots
+        beforeHeaderHtml = "<div>TOP AD BLOCK</div>",
+        headerHtml = "<div>Welcome to Store!</div>",
+        afterHeaderHtml = "<div>Sub-header info</div>",
+        beforeItemsHtml = "<p>Items list below:</p>",
+        afterItemsHtml = "<p>Items list above</p>",
+        beforeTotalsHtml = "<div>Promo: 10% applied</div>",
+        afterTotalsHtml = "<div>Refund terms & info</div>",
+        beforeQrHtml = "<div class='center'>Scan to verify check</div>",
+        footerHtml = "<div>Thank you for choosing us!</div>",
+        
+        customCss = ".doc-title { color: #6200EE; }"    // Optional CSS overrides
     ),
     ofdServiceInfo = myOfdServiceInfo
 )
@@ -77,14 +93,53 @@ val htmlString = renderer.renderHtml(myReceiptRequest, myFiscalDocumentSnapshot,
 myWebView.loadDataWithBaseURL(null, htmlString, "text/html", "UTF-8", null)
 ```
 
+#### 2. X-Reports and Z-Reports Rendering
+
+```kotlin
+val xReportHtml = renderer.renderXReportHtml(
+    shift = myShiftInfo,
+    counters = myCountersMap,
+    kkm = kkmInfo,
+    ofdStatus = "DELIVERED" // or "OFFLINE", "ERROR"
+)
+
+val zReportHtml = renderer.renderCloseShiftHtml(
+    shift = myShiftInfo,
+    counters = myCountersMap,
+    kkm = kkmInfo,
+    ofdStatus = "DELIVERED"
+)
+```
+
+#### 3. Cash Operations (Cash In / Cash Out)
+
+```kotlin
+val cashOpHtml = renderer.renderCashOperationHtml(
+    doc = myFiscalDocumentSnapshot,
+    kkm = kkmInfo
+)
+```
+
+#### 4. Shift Openings
+
+```kotlin
+val openShiftHtml = renderer.renderOpenShiftHtml(
+    shift = myShiftInfo,
+    kkm = kkmInfo,
+    ofdStatus = "DELIVERED"
+)
+```
+
 ### Visual Preview API (For Branding Configurator UI)
 
 If you are building a visual branding configurator UI editor, you can generate an instant preview of a mock receipt styled with the current draft branding settings:
 
 ```kotlin
 val draftBranding = ReceiptBranding(
-    language = ReceiptLanguage.RU,
-    paperWidthMm = 58
+    language = ReceiptLanguage.MIXED,
+    paperWidthMm = 58,
+    themeColor = "#ff5722",
+    headerHtml = "<div>Store Preview</div>"
 )
 val previewHtml = renderer.renderPreviewHtml(draftBranding)
 ```
@@ -98,14 +153,14 @@ val previewHtml = renderer.renderPreviewHtml(draftBranding)
 Библиотека отвечает за формирование HTML-страниц для чеков продажи/возврата, операций инкассации/внесения наличных, открытия смены и закрытия смены (Z-отчеты, X-отчеты) с адаптивной версткой под Google Material 3.
 
 ### Ключевые возможности
-- **Двуязычные локализованные шаблоны**: Автоматическая отрисовка наименований товаров, типов оплат, ставок НДС и мета-информации на русском и казахском языках в соответствии с требованиями КГД РК.
+- **Двуязычные локализованные шаблоны**: Автоматическая отрисовка наименований товаров, типов оплат, ставок НДС и мета-информации на русском и казахском языках в соответствии с требованиями КГД РК. В смешанном режиме (`MIXED`) казахский язык идет приоритетным (первым).
 - **Дизайн по канонам Material 3**: Соответствие современным гайдлайнам Google Material 3 (скругления контейнеров, четкие шрифты, плоские M3 разделители, скругленные pill-статусы).
 - **Светлая и темная темы**: Поддержка автоматического переключения тем на уровне браузера (`prefers-color-scheme: dark`) и ручного форсирования классов (`body.dark` / `body.light`) для Web-интерфейсов визуальных редакторов.
 - **Оптимизация под чековые ленты и печать**:
   - Автоматический сброс фонов и темных цветов в белый/черный режим при печати (`@media print`) для экономии тонера и сохранения читаемости на бумаге.
-  - Поддержка двух форматов лент: **80мм** (стандартная широкая лента) и **58мм** (мобильная узкая лента). Для 58мм автоматически сжимаются шрифты, отступы и таблицы, исключая выползание цифр и перенос колонок.
-- **Визуальное брендирование и Live Preview**: Возможность гибкой настройки логотипа, вставки кастомного HTML в шапку и подвал, инжекции произвольных CSS стилей и вызова предпросмотра макета через `renderPreviewHtml`.
-- **Динамический выбор ОФД**: Автоматическая генерация QR-кода и ссылок проверки с динамическим выбором доменов в зависимости от провайдера ОФД (`o.oofd.kz` для Транстелекома, `alteco.kz` для Alteco, `consumer.oofd.kz` для Казахтелекома).
+  - Поддержка двух форматов лент: **80мм** (стандартная широкая лента) и **58мм** (мобильная узкая лента). Для 58мм автоматически включается вертикальное стекирование длинных заголовков мета-таблиц, при этом элементы карточек товаров (например, `1 дана / шт × 180.00`) выводятся в одну строку.
+- **Визуальное брендирование и Live Preview**: Настройка логотипа, выбор кастомного цветового акцента (`themeColor`), вставка HTML-фрагментов во все ключевые секции чека, инжекция произвольных CSS-стилей и вызов предпросмотра макета через `renderPreviewHtml`.
+- **Динамический выбор ОФД**: Автоматическая генерация QR-кода и ссылок с динамическим выбором доменов в зависимости от провайдера ОФД (`o.oofd.kz` для Транстелекома, `alteco.kz` для Alteco, `consumer.oofd.kz` для Казахтелекома).
 
 ---
 
@@ -123,12 +178,17 @@ dependencies {
 
 ### Пример использования
 
+#### 1. Генерация чеков (Продажа / Возврат / Покупка / Возврат покупки)
+
 ```kotlin
 import kz.mybrain.superkassa.core.data.receipt.ReceiptHtmlRenderer
 import kz.mybrain.superkassa.core.domain.model.*
 
 // 1. Инициализация рендерера с адаптером QR-кодов
-val renderer = ReceiptHtmlRenderer(myQrCodeGeneratorImpl)
+val renderer = ReceiptHtmlRenderer(
+    qrCodeGenerator = myQrCodeGeneratorImpl,
+    ofdProviders = ReceiptHtmlRenderer.defaultOfdProviders // реестр провайдеров
+)
 
 // 2. Подготовка настроек брендирования ККМ
 val kkmInfo = KkmInfo(
@@ -140,12 +200,23 @@ val kkmInfo = KkmInfo(
     registrationNumber = "RN-999999",
     factoryNumber = "FN-888888",
     branding = ReceiptBranding(
-        language = ReceiptLanguage.MIXED,               // Язык чека: RU, KK, или MIXED
+        language = ReceiptLanguage.MIXED,               // Язык чека: RU, KK, или MIXED (казахский идет первым)
+        paperWidthMm = 58,                               // Ширина ленты: 58 или 80 (по умолчанию)
+        themeColor = "#4f46e5",                          // Кастомный цвет бренда (hex)
         headerLogoUrl = "https://mysite.com/logo.png",   // Ссылка на логотип
-        headerHtml = "<div>Добро пожаловать!</div>",     // Кастомный верхний колонтитул
-        footerHtml = "<div>Спасибо за покупку!</div>",   // Кастомный нижний колонтитул
-        customCss = ".doc-title { color: #6200EE; }",    // Произвольные CSS-стили
-        paperWidthMm = 58                                // Ширина ленты: 58 или 80 (по умолчанию)
+        
+        // Слоты для вставки кастомного HTML
+        beforeHeaderHtml = "<div>РЕКЛАМНЫЙ БЛОК НАВЕРХУ</div>",
+        headerHtml = "<div>Добро пожаловать!</div>",
+        afterHeaderHtml = "<div>Адрес магазина или режим работы</div>",
+        beforeItemsHtml = "<p>Список товаров ниже:</p>",
+        afterItemsHtml = "<p>Список товаров выше</p>",
+        beforeTotalsHtml = "<div>Промокод на скидку 10%</div>",
+        afterTotalsHtml = "<div>Информация по условиям возврата</div>",
+        beforeQrHtml = "<div class='center'>Отсканируйте для проверки</div>",
+        footerHtml = "<div>Спасибо за покупку!</div>",
+        
+        customCss = ".doc-title { color: #6200EE; }"    // Произвольные CSS-стили
     ),
     ofdServiceInfo = myOfdServiceInfo
 )
@@ -157,6 +228,43 @@ val htmlString = renderer.renderHtml(myReceiptRequest, myFiscalDocumentSnapshot,
 webView.loadDataWithBaseURL(null, htmlString, "text/html", "UTF-8", null)
 ```
 
+#### 2. Генерация X-отчетов и Z-отчетов (Закрытие смены)
+
+```kotlin
+val xReportHtml = renderer.renderXReportHtml(
+    shift = myShiftInfo,
+    counters = myCountersMap,
+    kkm = kkmInfo,
+    ofdStatus = "DELIVERED" // "OFFLINE", "ERROR"
+)
+
+val zReportHtml = renderer.renderCloseShiftHtml(
+    shift = myShiftInfo,
+    counters = myCountersMap,
+    kkm = kkmInfo,
+    ofdStatus = "DELIVERED"
+)
+```
+
+#### 3. Кассовые операции (Внесение / Изъятие наличных)
+
+```kotlin
+val cashOpHtml = renderer.renderCashOperationHtml(
+    doc = myFiscalDocumentSnapshot,
+    kkm = kkmInfo
+)
+```
+
+#### 4. Открытие смены
+
+```kotlin
+val openShiftHtml = renderer.renderOpenShiftHtml(
+    shift = myShiftInfo,
+    kkm = kkmInfo,
+    ofdStatus = "DELIVERED"
+)
+```
+
 ### API Предпросмотра (Для Конструктора Брендирования)
 
 Если вы разрабатываете UI-редактор брендирования чеков, вы можете быстро сгенерировать готовый макет чека с тестовым набором товаров для отображения в WebView/iframe:
@@ -164,7 +272,9 @@ webView.loadDataWithBaseURL(null, htmlString, "text/html", "UTF-8", null)
 ```kotlin
 val draftBranding = ReceiptBranding(
     language = ReceiptLanguage.KK,
-    paperWidthMm = 58
+    paperWidthMm = 58,
+    themeColor = "#e91e63",
+    headerHtml = "<div>Тестовый чек предпросмотра</div>"
 )
 val previewHtml = renderer.renderPreviewHtml(draftBranding)
 ```
