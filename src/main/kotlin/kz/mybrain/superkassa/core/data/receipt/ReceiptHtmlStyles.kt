@@ -546,17 +546,21 @@ object ReceiptHtmlStyles {
                     color: var(--m3-on-surface-variant);
                 }
                 .lang-kk {
-                    display: block;
-                    font-weight: inherit;
+                    display: inline;
                 }
                 .lang-sep {
-                    display: none;
+                    display: inline;
+                    color: #94a3b8;
+                    color: var(--m3-on-surface-variant);
+                    opacity: 0.55;
+                    padding: 0 4px;
                 }
                 .lang-ru {
-                    display: block;
-                    font-size: 0.82em;
-                    opacity: 0.6;
-                    margin-top: 2px;
+                    display: inline;
+                    font-size: 0.88em;
+                    opacity: 0.8;
+                    color: #475569;
+                    color: var(--m3-on-surface-variant);
                     font-weight: normal !important;
                 }
                 .bold { font-weight: 700; }
@@ -700,9 +704,40 @@ object ReceiptHtmlStyles {
                     font-size: 0.9em;
                     color: #475569;
                     color: var(--m3-on-surface-variant);
+                }                
+                /* Narrow tape specific vertical stacking for main labels only */
+                .tape-58mm .meta-table td:first-child .lang-kk,
+                .tape-58mm .summary-table td:first-child .lang-kk,
+                .tape-58mm .tax-row-table td:first-child .lang-kk,
+                .tape-58mm .parent-ticket-table td:first-child .lang-kk,
+                .tape-58mm .doc-title .lang-kk,
+                .tape-58mm .org-bin .lang-kk,
+                .tape-58mm .org-address .lang-kk {
+                    display: block;
+                    font-weight: inherit;
                 }
-
-
+                .tape-58mm .meta-table td:first-child .lang-sep,
+                .tape-58mm .summary-table td:first-child .lang-sep,
+                .tape-58mm .tax-row-table td:first-child .lang-sep,
+                .tape-58mm .parent-ticket-table td:first-child .lang-sep,
+                .tape-58mm .doc-title .lang-sep,
+                .tape-58mm .org-bin .lang-sep,
+                .tape-58mm .org-address .lang-sep {
+                    display: none;
+                }
+                .tape-58mm .meta-table td:first-child .lang-ru,
+                .tape-58mm .summary-table td:first-child .lang-ru,
+                .tape-58mm .tax-row-table td:first-child .lang-ru,
+                .tape-58mm .parent-ticket-table td:first-child .lang-ru,
+                .tape-58mm .doc-title .lang-ru,
+                .tape-58mm .org-bin .lang-ru,
+                .tape-58mm .org-address .lang-ru {
+                    display: block;
+                    font-size: 0.82em;
+                    opacity: 0.65;
+                    margin-top: 1px;
+                    font-weight: normal !important;
+                }
                 
                 /* Word split prevention on tables */
                 .meta-table td, .summary-table td, .parent-ticket-table td, .tax-row-table td, .item-row-table td {
