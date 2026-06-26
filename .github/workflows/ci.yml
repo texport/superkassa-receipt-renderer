@@ -22,6 +22,30 @@ jobs:
         distribution: 'temurin'
         cache: 'gradle'
 
+    - name: Checkout superkassa-delivery
+      uses: actions/checkout@v4
+      with:
+        repository: texport/superkassa-delivery
+        path: deps/superkassa-delivery
+
+    - name: Build superkassa-delivery
+      run: |
+        cd deps/superkassa-delivery
+        chmod +x gradlew
+        ./gradlew publishToMavenLocal
+
+    - name: Checkout superkassa-core
+      uses: actions/checkout@v4
+      with:
+        repository: texport/superkassa-core
+        path: deps/superkassa-core
+
+    - name: Build superkassa-core
+      run: |
+        cd deps/superkassa-core
+        chmod +x gradlew
+        ./gradlew publishToMavenLocal
+
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
 
