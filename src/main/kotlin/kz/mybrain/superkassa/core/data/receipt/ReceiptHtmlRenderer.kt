@@ -1,40 +1,20 @@
 package kz.mybrain.superkassa.core.data.receipt
 
-import kz.mybrain.superkassa.core.data.receipt.renderer.*
+import kz.mybrain.superkassa.core.data.receipt.renderer.operation.CashOperationRenderer
+import kz.mybrain.superkassa.core.data.receipt.renderer.report.OpenShiftRenderer
+import kz.mybrain.superkassa.core.data.receipt.renderer.report.XReportRenderer
+import kz.mybrain.superkassa.core.data.receipt.renderer.report.ZReportRenderer
+import kz.mybrain.superkassa.core.data.receipt.renderer.ticket.SaleReceiptRenderer
 import kz.mybrain.superkassa.core.domain.model.*
 import kz.mybrain.superkassa.core.domain.port.QrCodeGeneratorPort
 import kz.mybrain.superkassa.core.domain.port.ReceiptRenderPort
-
 import kz.mybrain.superkassa.core.domain.tax.TaxCalculationService
 
 class ReceiptHtmlRenderer(
-    private val qrCodeGenerator: QrCodeGeneratorPort,
-    private val taxCalculationService: TaxCalculationService = TaxCalculationService(),
-    private val ofdProviders: Map<String, OfdProviderConfig> = defaultOfdProviders
+    qrCodeGenerator: QrCodeGeneratorPort,
+    taxCalculationService: TaxCalculationService = TaxCalculationService(),
+    ofdProviders: Map<String, OfdProviderConfig> = DefaultOfdProvidersRegistry.defaultOfdProviders
 ) : ReceiptRenderPort {
-
-    companion object {
-        val defaultOfdProviders = mapOf(
-            "KAZAKHTELECOM" to OfdProviderConfig(
-                nameRu = "АО «Казахтелеком»",
-                nameKk = "«Қазақтелеком» АҚ",
-                website = "oofd.kz",
-                checkDomain = "consumer.oofd.kz"
-            ),
-            "TRANSTELECOM" to OfdProviderConfig(
-                nameRu = "АО «Транстелеком»",
-                nameKk = "«Транстелеком» АҚ",
-                website = "o.oofd.kz",
-                checkDomain = "o.oofd.kz"
-            ),
-            "ALTECO" to OfdProviderConfig(
-                nameRu = "ТОО «Alteco Partners»",
-                nameKk = "«Alteco Partners» ЖШС",
-                website = "alteco.kz",
-                checkDomain = "alteco.kz"
-            )
-        )
-    }
 
     private val saleRenderer = SaleReceiptRenderer(qrCodeGenerator, taxCalculationService, ofdProviders)
     private val xReportRenderer = XReportRenderer()
@@ -42,48 +22,75 @@ class ReceiptHtmlRenderer(
     private val openShiftRenderer = OpenShiftRenderer()
     private val cashOperationRenderer = CashOperationRenderer()
 
+    private fun overrideKkmLayout(kkm: KkmInfo, layoutType: ReceiptLayoutType?): KkmInfo {
+        if (layoutType == null) return kkm
+        val targetWidth = when (layoutType) {
+            ReceiptLayoutType.TAPE_80MM -> 80
+            ReceiptLayoutType.TAPE_58MM -> 58
+            ReceiptLayoutType.FULLSCREEN -> 0
+        }
+        return kkm.copy(branding = kkm.branding.copy(paperWidthMm = targetWidth))
+    }
+
+    private fun overrideBrandingLayout(branding: ReceiptBranding, layoutType: ReceiptLayoutType?): ReceiptBranding {
+        if (layoutType == null) return branding
+        val targetWidth = when (layoutType) {
+            ReceiptLayoutType.TAPE_80MM -> 80
+            ReceiptLayoutType.TAPE_58MM -> 58
+            ReceiptLayoutType.FULLSCREEN -> 0
+        }
+        return branding.copy(paperWidthMm = targetWidth)
+    }
+
     override fun renderHtml(
         receipt: ReceiptRequest,
         doc: FiscalDocumentSnapshot,
-        kkm: KkmInfo
+        kkm: KkmInfo,
+        layoutType: ReceiptLayoutType?
     ): String {
-        return saleRenderer.render(receipt, doc, kkm)
+        return saleRenderer.render(receipt, doc, overrideKkmLayout(kkm, layoutType))
     }
 
     override fun renderXReportHtml(
         shift: ShiftInfo,
         counters: Map<String, Long>,
         kkm: KkmInfo,
-        ofdStatus: String?
+        ofdStatus: String?,
+        layoutType: ReceiptLayoutType?
     ): String {
-        return xReportRenderer.render(shift, counters, kkm, ofdStatus)
+        return xReportRenderer.render(shift, counters, overrideKkmLayout(kkm, layoutType), ofdStatus)
     }
 
     override fun renderOpenShiftHtml(
         shift: ShiftInfo,
         kkm: KkmInfo,
-        ofdStatus: String?
+        ofdStatus: String?,
+        docNo: String?,
+        layoutType: ReceiptLayoutType?
     ): String {
-        return openShiftRenderer.render(shift, kkm, ofdStatus)
+        return openShiftRenderer.render(shift, overrideKkmLayout(kkm, layoutType), ofdStatus, docNo)
     }
 
     override fun renderCloseShiftHtml(
         shift: ShiftInfo,
         counters: Map<String, Long>,
         kkm: KkmInfo,
-        ofdStatus: String?
+        ofdStatus: String?,
+        docNo: String?,
+        layoutType: ReceiptLayoutType?
     ): String {
-        return zReportRenderer.render(shift, counters, kkm, ofdStatus)
+        return zReportRenderer.render(shift, counters, overrideKkmLayout(kkm, layoutType), ofdStatus, docNo)
     }
 
     override fun renderCashOperationHtml(
         doc: FiscalDocumentSnapshot,
-        kkm: KkmInfo
+        kkm: KkmInfo,
+        layoutType: ReceiptLayoutType?
     ): String {
-        return cashOperationRenderer.render(doc, kkm)
+        return cashOperationRenderer.render(doc, overrideKkmLayout(kkm, layoutType))
     }
 
-    override fun renderPreviewHtml(branding: ReceiptBranding): String {
+    override fun renderPreviewHtml(branding: ReceiptBranding, layoutType: ReceiptLayoutType?): String {
         val mockItems = listOf(
             ReceiptItem(
                 name = "Товар Предпросмотра / Алдын ала қарау тауары",
@@ -158,7 +165,7 @@ class ReceiptHtmlRenderer(
             state = "READY",
             registrationNumber = "NZ7700123456",
             factoryNumber = "SW7700987654",
-            branding = branding,
+            branding = overrideBrandingLayout(branding, layoutType),
             ofdServiceInfo = OfdServiceInfo(
                 orgTitle = "ТОО ДЕМО-БРЕНДИНГ / DEMO-BRANDING",
                 orgInn = "123456789012",

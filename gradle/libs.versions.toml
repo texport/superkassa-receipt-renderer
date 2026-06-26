@@ -3,12 +3,14 @@ kotlin = "2.4.0"
 slf4j = "2.0.18"
 detekt = "1.23.8"
 superkassaCore = "1.0"
+serialization = "1.11.0"
 nmcp = "1.5.0"
 mockk = "1.14.11"
 zxing = "3.5.4"
 
 [libraries]
 slf4j-api = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4j" }
+kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
 superkassa-core = { group = "kz.mybrain", name = "superkassa-core", version.ref = "superkassaCore" }
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 detekt-formatting = { group = "io.gitlab.arturbosch.detekt", name = "detekt-formatting", version.ref = "detekt" }

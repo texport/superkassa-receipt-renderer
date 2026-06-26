@@ -1,9 +1,9 @@
 package kz.mybrain.superkassa.core.data.receipt
 
-import kz.mybrain.superkassa.core.data.receipt.renderer.CashOperationRenderer
-import kz.mybrain.superkassa.core.data.receipt.renderer.OpenShiftRenderer
-import kz.mybrain.superkassa.core.data.receipt.renderer.XReportRenderer
-import kz.mybrain.superkassa.core.data.receipt.renderer.ZReportRenderer
+import kz.mybrain.superkassa.core.data.receipt.renderer.operation.CashOperationRenderer
+import kz.mybrain.superkassa.core.data.receipt.renderer.report.OpenShiftRenderer
+import kz.mybrain.superkassa.core.data.receipt.renderer.report.XReportRenderer
+import kz.mybrain.superkassa.core.data.receipt.renderer.report.ZReportRenderer
 import kz.mybrain.superkassa.core.domain.model.FiscalDocumentSnapshot
 import kz.mybrain.superkassa.core.domain.model.KkmInfo
 import kz.mybrain.superkassa.core.domain.model.ReceiptBranding
@@ -152,7 +152,7 @@ class ReportPrintRendererTest {
         val htmlIn = cashOperationRenderer.render(docIn, kkm)
         val cleanHtmlIn = stripHtml(htmlIn)
         assertTrue(cleanHtmlIn.contains("ВНЕСЕНИЕ НАЛИЧНЫХ"))
-        assertTrue(cleanHtmlIn.contains("2500.00 KZT") || cleanHtmlIn.contains("2500,00 KZT"))
+        assertTrue(cleanHtmlIn.contains("2500.00 ₸") || cleanHtmlIn.contains("2500,00 ₸"))
         assertTrue(cleanHtmlIn.contains("Құжат № / Документ №"))
 
         val docOut = FiscalDocumentSnapshot(
@@ -175,7 +175,7 @@ class ReportPrintRendererTest {
         val htmlOut = cashOperationRenderer.render(docOut, kkm)
         val cleanHtmlOut = stripHtml(htmlOut)
         assertTrue(cleanHtmlOut.contains("ИЗЪЯТИЕ НАЛИЧНЫХ"))
-        assertTrue(cleanHtmlOut.contains("100.00 KZT") || cleanHtmlOut.contains("100,00 KZT"))
+        assertTrue(cleanHtmlOut.contains("100.00 ₸") || cleanHtmlOut.contains("100,00 ₸"))
 
         val docOther = FiscalDocumentSnapshot(
             id = "doc-3",
@@ -197,10 +197,13 @@ class ReportPrintRendererTest {
         val htmlOther = cashOperationRenderer.render(docOther, kkm)
         val cleanHtmlOther = stripHtml(htmlOther)
         assertTrue(cleanHtmlOther.contains("ОПЕРАЦИЯ С НАЛИЧНЫМИ"))
-        assertTrue(cleanHtmlOther.contains("0.00 KZT"))
+        assertTrue(cleanHtmlOther.contains("0.00 ₸"))
     }
 
     private fun stripHtml(html: String): String {
-        return html.replace(Regex("<[^>]*>"), "")
+        var result = html
+        result = result.replace(Regex("""<span\s+class="lang-fraction">\s*<span\s+class="lang-fraction-top">([\s\S]*?)</span>\s*<span\s+class="lang-fraction-bottom">([\s\S]*?)</span>\s*</span>"""), "$1 / $2")
+        result = result.replace(Regex("""<span\s+class="badge\s+[^"]*">\s*<span\s+class="badge-main">([\s\S]*?)</span>\s*<span\s+class="badge-divider"></span>\s*<span\s+class="badge-sub">([\s\S]*?)</span>\s*</span>"""), "$1 / $2")
+        return result.replace(Regex("<[^>]*>"), "")
     }
 }

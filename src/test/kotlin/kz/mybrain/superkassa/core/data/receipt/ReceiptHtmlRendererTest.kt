@@ -184,7 +184,7 @@ class ReceiptHtmlRendererTest {
         val cleanHtml = stripHtml(html)
         assertTrue(cleanHtml.contains("САТУ ЧЕГІ"))
         assertTrue(cleanHtml.contains("ЧЕК ПРОДАЖИ"))
-        assertTrue(html.contains("<span class=\"lang-kk\">САТУ ЧЕГІ</span>"))
+        assertTrue(html.contains("<span class=\"lang-fraction-top\">САТУ ЧЕГІ</span>"))
         assertTrue(cleanHtml.contains("12"))
         assertTrue(cleanHtml.contains("Apple"))
         assertTrue(cleanHtml.contains("дана / шт"))
@@ -400,13 +400,17 @@ class ReceiptHtmlRendererTest {
         assertTrue(cleanXReport.contains("Ауысым № / Смена №"))
         assertTrue(cleanXReport.contains("45"))
 
-        val openShift = renderer.renderOpenShiftHtml(shift, kkm, null)
+        val openShift = renderer.renderOpenShiftHtml(shift, kkm, null, "42")
         val cleanOpenShift = stripHtml(openShift)
         assertTrue(cleanOpenShift.contains("ОТКРЫТИЕ СМЕНЫ"))
+        assertTrue(openShift.contains("Документ №") || openShift.contains("Құжат №"))
+        assertTrue(openShift.contains("42"))
 
-        val closeShift = renderer.renderCloseShiftHtml(shift, counters, kkm, null)
+        val closeShift = renderer.renderCloseShiftHtml(shift, counters, kkm, null, "43")
         val cleanCloseShift = stripHtml(closeShift)
         assertTrue(cleanCloseShift.contains("Z-ОТЧЁТ (ЗАКРЫТИЕ СМЕНЫ)"))
+        assertTrue(closeShift.contains("Документ №") || closeShift.contains("Құжат №"))
+        assertTrue(closeShift.contains("43"))
 
         val doc = FiscalDocumentSnapshot(
             id = "doc-999",
@@ -578,9 +582,10 @@ class ReceiptHtmlRendererTest {
     }
 
     @Test
+    @Suppress("LongMethod")
     fun testGenerateExampleHtmlFiles() {
         val renderer = ReceiptHtmlRenderer(ZxingQrCodeGenerator())
-        val rootOutputDir = java.io.File("../superkassa/receipt-examples")
+        val rootOutputDir = java.io.File("src/test/resources/receipt-examples")
         if (rootOutputDir.exists()) {
             rootOutputDir.deleteRecursively()
         }
@@ -864,13 +869,14 @@ class ReceiptHtmlRendererTest {
             totalAmount = 3000000L
         )
 
-        val widths = listOf(80, 58)
+        val widths = listOf(80, 58, 0)
         val themes = listOf(false, true) // false = light, true = dark
 
         for (width in widths) {
             for (isDark in themes) {
                 val themeName = if (isDark) "dark" else "light"
-                val dir = java.io.File(rootOutputDir, "${width}mm/$themeName")
+                val widthDirName = if (width == 0) "fullscreen" else "${width}mm"
+                val dir = java.io.File(rootOutputDir, "$widthDirName/$themeName")
                 
                 val salesDir = java.io.File(dir, "tickets/sales")
                 val refundSalesDir = java.io.File(dir, "tickets/refund_sales")
@@ -887,15 +893,16 @@ class ReceiptHtmlRendererTest {
                 operationsDir.mkdirs()
 
                 val themeColor = when {
+                    width == 0 && !isDark -> "indigo"
+                    width == 0 && isDark -> "rose"
                     width == 80 && !isDark -> "teal"
                     width == 80 && isDark -> "green"
                     width == 58 && !isDark -> "blue"
                     else -> "orange"
                 }
-                val css = if (isDark) "/* force-dark */" else ""
                 val folderBranding = ReceiptBranding(
                     paperWidthMm = width,
-                    customCss = css,
+                    useForceDarkTheme = isDark,
                     themeColor = themeColor
                 )
                 val kkmForFolder = baseKkm.copy(branding = folderBranding)
@@ -956,7 +963,7 @@ class ReceiptHtmlRendererTest {
 
                 // 6. Open Shift
                 reportsDir.resolve("open_shift.html").writeText(
-                    renderer.renderOpenShiftHtml(shiftOpen, kkmForFolder, null)
+                    renderer.renderOpenShiftHtml(shiftOpen, kkmForFolder, null, "101")
                 )
 
                 // 7. X-Report
@@ -976,27 +983,27 @@ class ReceiptHtmlRendererTest {
 
                 // 8. Z-Report
                 reportsDir.resolve("z_report.html").writeText(
-                    renderer.renderCloseShiftHtml(shiftClose, counters, kkmForFolder, null)
+                    renderer.renderCloseShiftHtml(shiftClose, counters, kkmForFolder, null, "102")
                 )
 
                 // 8a. Russian-only Z-Report
                 reportsDir.resolve("z_report_russian.html").writeText(
-                    renderer.renderCloseShiftHtml(shiftClose, counters, kkmForFolder.copy(branding = folderBranding.copy(language = ReceiptLanguage.RU)), null)
+                    renderer.renderCloseShiftHtml(shiftClose, counters, kkmForFolder.copy(branding = folderBranding.copy(language = ReceiptLanguage.RU)), null, "102")
                 )
 
                 // 8b. Kazakh-only Z-Report
                 reportsDir.resolve("z_report_kazakh.html").writeText(
-                    renderer.renderCloseShiftHtml(shiftClose, counters, kkmForFolder.copy(branding = folderBranding.copy(language = ReceiptLanguage.KK)), null)
+                    renderer.renderCloseShiftHtml(shiftClose, counters, kkmForFolder.copy(branding = folderBranding.copy(language = ReceiptLanguage.KK)), null, "102")
                 )
 
                 // 8c. Offline Z-Report
                 reportsDir.resolve("z_report_offline.html").writeText(
-                    renderer.renderCloseShiftHtml(shiftClose, counters, kkmForFolder, "PENDING")
+                    renderer.renderCloseShiftHtml(shiftClose, counters, kkmForFolder, "PENDING", "102")
                 )
 
                 // 8d. Failed Z-Report
                 reportsDir.resolve("z_report_failed.html").writeText(
-                    renderer.renderCloseShiftHtml(shiftClose, counters, kkmForFolder, "ERROR")
+                    renderer.renderCloseShiftHtml(shiftClose, counters, kkmForFolder, "ERROR", "102")
                 )
 
                 // 9. Cash In
@@ -1045,13 +1052,11 @@ class ReceiptHtmlRendererTest {
                 val brandingBranded = folderBranding.copy(
                     language = ReceiptLanguage.MIXED,
                     headerLogoUrl = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100&auto=format&fit=crop",
-                    headerHtml = "<div class='center' style='padding: 5px; background: #ffebeb; color: #cc0000; border-radius: 4px; font-weight: bold;'>СУПЕР АКЦИЯ: -20% НА ВСЁ!</div>",
-                    footerHtml = "<div class='center' style='margin-top: 10px; color: #666; font-size: 11px;'>Спасибо, что выбрали нас! / Бізді таңдағаныңызға рақмет!</div>",
-                    customCss = if (isDark) {
-                        "/* force-dark */\nbody { background-color: #1e1d20; } .receipt-card { border-top: 5px solid #ffb833; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5); }"
-                    } else {
-                        "body { background-color: #faf8f5; } .receipt-card { border-top: 5px solid #d97706; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }"
-                    }
+                    headerMsg = "<div class='center' style='padding: 5px; background: #ffebeb; color: #cc0000; border-radius: 4px; font-weight: bold;'>СУПЕР АКЦИЯ: -20% НА ВСЁ!</div>",
+                    footerMsg = "<div class='center' style='margin-top: 10px; color: #666; font-size: 11px;'>Спасибо, что выбрали нас! / Бізді таңдағаныңызға рақмет!</div>",
+                    useForceDarkTheme = isDark,
+                    customBackgroundColorHex = if (isDark) "#1e1d20" else "#faf8f5",
+                    customCardTopBorderColorHex = if (isDark) "#ffb833" else "#d97706"
                 )
                 salesDir.resolve("sale_receipt_branded.html").writeText(
                     renderer.renderHtml(request1, doc1, kkmForFolder.copy(branding = brandingBranded))
@@ -1062,15 +1067,15 @@ class ReceiptHtmlRendererTest {
                     language = ReceiptLanguage.MIXED,
                     themeColor = "rose",
                     headerLogoUrl = "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=100&auto=format&fit=crop",
-                    beforeHeaderHtml = "<div class='center' style='color: #ff0000; font-weight: bold; padding: 4px; border: 1px solid red; border-radius: 4px;'>!!! BEFORE HEADER BLOCK !!!</div>",
-                    headerHtml = "<div class='center' style='background: #ffebeb; padding: 4px;'>HEADER HTML</div>",
-                    afterHeaderHtml = "<div class='center' style='color: #00aa00; font-size: 11px;'>AFTER HEADER (BEFORE TITLE)</div>",
-                    beforeItemsHtml = "<div style='border: 1px solid #ccc; padding: 6px; border-radius: 8px; background: #fafafa; color: #555;'>BEFORE ITEMS CONTENT</div>",
-                    afterItemsHtml = "<div style='border: 1px dashed #aaa; padding: 6px; border-radius: 8px; background: #fdfdfd;'>AFTER ITEMS INFO</div>",
-                    beforeTotalsHtml = "<div style='color: #777; font-size: 11px; padding: 2px;'>BEFORE TOTALS MSG</div>",
-                    afterTotalsHtml = "<div style='background: #eef; padding: 6px; border-radius: 8px; font-weight: 500;'>AFTER TOTALS / TAXES BANNER</div>",
-                    beforeQrHtml = "<div class='center' style='font-style: italic; font-size: 11px; color: #4f46e5;'>BEFORE QR PROMO</div>",
-                    footerHtml = "<div class='center' style='font-size: 10px; color: #999;'>FOOTER THANK YOU</div>"
+                    beforeHeaderMsg = "<div class='center' style='color: #ff0000; font-weight: bold; padding: 4px; border: 1px solid red; border-radius: 4px;'>!!! BEFORE HEADER BLOCK !!!</div>",
+                    headerMsg = "<div class='center' style='background: #ffebeb; padding: 4px;'>HEADER HTML</div>",
+                    afterHeaderMsg = "<div class='center' style='color: #00aa00; font-size: 11px;'>AFTER HEADER (BEFORE TITLE)</div>",
+                    beforeItemsMsg = "<div style='border: 1px solid #ccc; padding: 6px; border-radius: 8px; background: #fafafa; color: #555;'>BEFORE ITEMS CONTENT</div>",
+                    afterItemsMsg = "<div style='border: 1px dashed #aaa; padding: 6px; border-radius: 8px; background: #fdfdfd;'>AFTER ITEMS INFO</div>",
+                    beforeTotalsMsg = "<div style='color: #777; font-size: 11px; padding: 2px;'>BEFORE TOTALS MSG</div>",
+                    afterTotalsMsg = "<div style='background: #eef; padding: 6px; border-radius: 8px; font-weight: 500;'>AFTER TOTALS / TAXES BANNER</div>",
+                    beforeQrMsg = "<div class='center' style='font-style: italic; font-size: 11px; color: #4f46e5;'>BEFORE QR PROMO</div>",
+                    footerMsg = "<div class='center' style='font-size: 10px; color: #999;'>FOOTER THANK YOU</div>"
                 )
                 salesDir.resolve("sale_receipt_fully_branded.html").writeText(
                     renderer.renderHtml(request1, doc1, kkmForFolder.copy(branding = brandingFullyBranded))
@@ -1127,10 +1132,20 @@ class ReceiptHtmlRendererTest {
                 )
 
                 reportsDir.resolve("open_shift_russian.html").writeText(
-                    renderer.renderOpenShiftHtml(shiftOpen, kkmForFolder.copy(branding = folderBranding.copy(language = ReceiptLanguage.RU)), null)
+                    renderer.renderOpenShiftHtml(
+                        shiftOpen,
+                        kkmForFolder.copy(branding = folderBranding.copy(language = ReceiptLanguage.RU)),
+                        null,
+                        "101"
+                    )
                 )
                 reportsDir.resolve("open_shift_kazakh.html").writeText(
-                    renderer.renderOpenShiftHtml(shiftOpen, kkmForFolder.copy(branding = folderBranding.copy(language = ReceiptLanguage.KK)), null)
+                    renderer.renderOpenShiftHtml(
+                        shiftOpen,
+                        kkmForFolder.copy(branding = folderBranding.copy(language = ReceiptLanguage.KK)),
+                        null,
+                        "101"
+                    )
                 )
 
                 operationsDir.resolve("cash_in_russian.html").writeText(
@@ -1150,7 +1165,54 @@ class ReceiptHtmlRendererTest {
         }
     }
 
+    @Test
+    fun testExplicitLayoutOverride() {
+        val renderer = ReceiptHtmlRenderer(StubQrCodeGenerator())
+        val kkm = defaultKkm.copy(branding = ReceiptBranding(paperWidthMm = 80))
+        val request = ReceiptRequest(
+            kkmId = "kkm-123",
+            pin = "1111",
+            operation = ReceiptOperationType.SELL,
+            items = listOf(ReceiptItem("Apple", "001", 1L, Money(100, 0), Money(100, 0))),
+            payments = listOf(ReceiptPayment(PaymentType.CASH, Money(100, 0))),
+            total = Money(100, 0),
+            idempotencyKey = "key-1"
+        )
+        val doc = FiscalDocumentSnapshot(
+            id = "doc-1",
+            cashboxId = "kkm-123",
+            shiftId = "shift-1",
+            docType = "TICKET",
+            docNo = 1,
+            shiftNo = 1,
+            createdAt = 1782200000000L,
+            totalAmount = 10000L,
+            currency = "KZT",
+            fiscalSign = "FS-1",
+            autonomousSign = null,
+            isAutonomous = false,
+            ofdStatus = "DELIVERED",
+            deliveredAt = 1782200010000L
+        )
+
+        // Without override, should have tape-80mm width class
+        val htmlDefault = renderer.renderHtml(request, doc, kkm)
+        assertTrue(htmlDefault.contains("tape-80mm"))
+
+        // With override to 58mm
+        val html58 = renderer.renderHtml(request, doc, kkm, ReceiptLayoutType.TAPE_58MM)
+        assertTrue(html58.contains("tape-58mm"))
+
+        // With override to fullscreen
+        val htmlFullscreen = renderer.renderHtml(request, doc, kkm, ReceiptLayoutType.FULLSCREEN)
+        assertTrue(htmlFullscreen.contains("tape-fullscreen"))
+    }
+
     private fun stripHtml(html: String): String {
-        return html.replace(Regex("<[^>]*>"), "")
+        var result = html
+        result = result.replace(Regex("""<span\s+class="lang-fraction">\s*<span\s+class="lang-fraction-top">([\s\S]*?)</span>\s*<span\s+class="lang-fraction-bottom">([\s\S]*?)</span>\s*</span>"""), "$1 / $2")
+        result = result.replace(Regex("""<span\s+class="badge\s+[^"]*">\s*<span\s+class="badge-main">([\s\S]*?)</span>\s*<span\s+class="badge-divider"></span>\s*<span\s+class="badge-sub">([\s\S]*?)</span>\s*</span>"""), "$1 / $2")
+        result = result.replace(Regex("""</td>\s*<td>"""), " ")
+        return result.replace(Regex("<[^>]*>"), "")
     }
 }

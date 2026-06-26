@@ -24,6 +24,7 @@ detekt {
 
 dependencies {
     implementation(libs.superkassa.core)
+    implementation(libs.kotlinx.serialization.json)
     implementation(libs.slf4j.api)
     
     testImplementation(kotlin("test"))
