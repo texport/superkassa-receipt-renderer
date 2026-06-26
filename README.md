@@ -1,7 +1,7 @@
 # superkassa-receipt-renderer
 
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.texport/superkassa-receipt-renderer.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/io.github.texport/superkassa-receipt-renderer)
-[![Version](https://img.shields.io/badge/version-1.0.1-blue.svg)](#)
+[![Version](https://img.shields.io/badge/version-1.0.2-blue.svg)](#)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![CI Build](https://img.shields.io/github/actions/workflow/status/texport/superkassa-receipt-renderer/ci.yml?branch=main&label=CI%20Build)](https://github.com/texport/superkassa-receipt-renderer/actions)
 
@@ -35,7 +35,7 @@ Add the dependency to your `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("io.github.texport:superkassa-receipt-renderer:1.0.1")
+    implementation("io.github.texport:superkassa-receipt-renderer:1.0.2")
 }
 ```
 
@@ -172,7 +172,7 @@ val previewHtml = renderer.renderPreviewHtml(draftBranding)
 
 ```kotlin
 dependencies {
-    implementation("io.github.texport:superkassa-receipt-renderer:1.0.1")
+    implementation("io.github.texport:superkassa-receipt-renderer:1.0.2")
 }
 ```
 
