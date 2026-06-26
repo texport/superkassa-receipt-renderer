@@ -32,7 +32,7 @@ jobs:
       run: |
         cd deps/superkassa-delivery
         chmod +x ../../gradlew
-        ../../gradlew publishToMavenLocal
+        ../../gradlew publishToMavenLocal --info --stacktrace
 
     - name: Checkout superkassa-core
       uses: actions/checkout@v4
@@ -44,7 +44,7 @@ jobs:
       run: |
         cd deps/superkassa-core
         chmod +x ../../gradlew
-        ../../gradlew publishToMavenLocal
+        ../../gradlew publishToMavenLocal --info --stacktrace
 
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
