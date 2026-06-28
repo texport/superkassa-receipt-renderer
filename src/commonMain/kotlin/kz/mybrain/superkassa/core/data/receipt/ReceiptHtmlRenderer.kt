@@ -12,6 +12,7 @@ import kz.mybrain.superkassa.core.domain.model.common.*
 import kz.mybrain.superkassa.core.domain.model.receipt.*
 import kz.mybrain.superkassa.core.domain.port.QrCodeGeneratorPort
 import kz.mybrain.superkassa.core.domain.port.ReceiptRenderPort
+
 class ReceiptHtmlRenderer(
     qrCodeGenerator: QrCodeGeneratorPort,
     ofdProviders: Map<String, OfdProviderConfig> = DefaultOfdProvidersRegistry.defaultOfdProviders

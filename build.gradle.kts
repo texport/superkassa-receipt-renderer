@@ -143,6 +143,7 @@ detekt {
     buildUponDefaultConfig = true
     allRules = true
     autoCorrect = true
+    source.setFrom(files("src/commonMain/kotlin", "src/jvmMain/kotlin", "src/iosMain/kotlin"))
 }
 
 tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {

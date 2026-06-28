@@ -11,7 +11,7 @@ actual object ResourceLoader {
         val cleanPath = path.removePrefix("/")
         val extension = cleanPath.substringAfterLast('.', "")
         val name = cleanPath.substringBeforeLast('.')
-        
+
         val bundle = NSBundle.mainBundle
         val filePath = bundle.pathForResource(name, extension) ?: return null
         return NSString.stringWithContentsOfFile(filePath, NSUTF8StringEncoding, null)
