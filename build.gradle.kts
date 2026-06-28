@@ -111,6 +111,7 @@ jacoco {
 }
 
 val jacocoTestReport = tasks.register<JacocoReport>("jacocoTestReport") {
+    description = "Generates Jacoco code coverage report for the JVM target."
     dependsOn(tasks.named("jvmTest"))
     classDirectories.setFrom(files(tasks.named("compileKotlinJvm")))
     sourceDirectories.setFrom(files("src/commonMain/kotlin", "src/jvmMain/kotlin"))
@@ -122,6 +123,7 @@ val jacocoTestReport = tasks.register<JacocoReport>("jacocoTestReport") {
 }
 
 val jacocoTestCoverageVerification = tasks.register<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
+    description = "Verifies code coverage metrics against thresholds."
     dependsOn(jacocoTestReport)
     executionData.setFrom(files(layout.buildDirectory.file("jacoco/jvmTest.exec")))
     classDirectories.setFrom(files(tasks.named("compileKotlinJvm")))
