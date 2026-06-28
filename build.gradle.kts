@@ -46,6 +46,16 @@ kotlin {
             }
         }
     }
+
+    targets.all {
+        compilations.all {
+            compileTaskProvider.configure {
+                compilerOptions {
+                    freeCompilerArgs.add("-Xexpect-actual-classes")
+                }
+            }
+        }
+    }
 }
 
 publishing {
@@ -136,5 +146,9 @@ detekt {
 }
 
 tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
-    jvmTarget = "17"
+    exclude("**/build/generated/**")
+}
+
+dependencies {
+    detektPlugins(libs.detekt.formatting)
 }

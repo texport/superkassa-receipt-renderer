@@ -1,4 +1,5 @@
 package kz.mybrain.superkassa.core.data.receipt.renderer.base
+
 import kz.mybrain.superkassa.core.domain.model.kkm.*
 import kz.mybrain.superkassa.core.domain.model.ofd.*
 import kz.mybrain.superkassa.core.domain.model.shift.*
@@ -104,8 +105,7 @@ abstract class BaseDocumentRenderer {
     protected fun renderPageFrame(title: String, bodyContent: String, kkm: KkmInfo, docCss: String = ""): String {
         val cleanTitle = title.replace(Regex("<[^>]*>"), "")
         val widthMm = kkm.branding.paperWidthMm
-        val sizeRule = if (widthMm == 0) "auto" else "${widthMm}mm auto"
-        val marginRule = if (widthMm == 0) "" else "margin: 0;"
+        val pageRule = if (widthMm == 0) "size: auto;" else "size: ${widthMm}mm auto; margin: 0;"
         val widthClass = if (widthMm == 0) "tape-fullscreen" else "tape-${widthMm}mm"
         val brandingAdapter = HtmlBrandingAdapter(kkm.branding)
         val customCss = brandingAdapter.customCss
@@ -117,8 +117,7 @@ abstract class BaseDocumentRenderer {
             "page_frame.html",
             mapOf(
                 "title" to cleanTitle,
-                "sizeRule" to sizeRule,
-                "marginRule" to marginRule,
+                "pageRule" to pageRule,
                 "sharedCss" to SharedStyles.SHARED_CSS,
                 "docCss" to docCss,
                 "customCss" to customCss,
