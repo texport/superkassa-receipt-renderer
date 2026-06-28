@@ -6,11 +6,7 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
 /**
- * Formatting utility for receipts and money values in Kazakh/Russian/English layouts.
- *
  * Утилита форматирования чеков и денежных сумм для казахской/русской/английской разметки.
- *
- * Чектерді және ақша сомаларын қазақ/орыс/ағылшын тілдерінде форматтауға арналған көмекші құрал.
  */
 object ReceiptFormatter {
 

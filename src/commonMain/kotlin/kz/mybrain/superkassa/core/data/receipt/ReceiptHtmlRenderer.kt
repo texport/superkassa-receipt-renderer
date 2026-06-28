@@ -14,11 +14,7 @@ import kz.mybrain.superkassa.core.domain.port.QrCodeGeneratorPort
 import kz.mybrain.superkassa.core.domain.port.ReceiptRenderPort
 
 /**
- * HTML implementation of the receipt rendering engine. Dispatches rendering requests to corresponding component-based sub-renderers.
- *
  * HTML-реализация движка рендеринга чеков. Делегирует запросы рендеринга соответствующим компонентным саб-рендерерам.
- *
- * Чектерді форматтау қозғалтқышының HTML нұсқасы. Сұраныстарды тиісті компоненттік қосалқы рендерерлерге жібереді.
  */
 class ReceiptHtmlRenderer(
     qrCodeGenerator: QrCodeGeneratorPort,
