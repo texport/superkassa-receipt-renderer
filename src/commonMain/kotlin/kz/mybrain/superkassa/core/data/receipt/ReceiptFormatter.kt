@@ -1,4 +1,5 @@
 package kz.mybrain.superkassa.core.data.receipt
+
 import kz.mybrain.superkassa.core.domain.model.common.Money
 
 import kotlinx.datetime.Instant

@@ -1,4 +1,5 @@
 package kz.mybrain.superkassa.core.data.receipt
+
 import kz.mybrain.superkassa.core.domain.model.kkm.*
 import kz.mybrain.superkassa.core.domain.model.shift.*
 import kz.mybrain.superkassa.core.domain.model.receipt.*

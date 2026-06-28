@@ -1,4 +1,5 @@
 package kz.mybrain.superkassa.core.data.receipt.renderer.operation
+
 import kz.mybrain.superkassa.core.domain.model.kkm.*
 import kz.mybrain.superkassa.core.domain.model.receipt.*
 

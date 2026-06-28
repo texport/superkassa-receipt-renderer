@@ -99,3 +99,5 @@ formatting:
     active: false
   ImportOrdering:
     active: false
+  PackageHeaderSpacing:
+    active: true
