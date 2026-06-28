@@ -1,14 +1,4 @@
 package kz.mybrain.superkassa.core.data.receipt.renderer.style
-import kz.mybrain.superkassa.core.domain.model.kkm.*
-import kz.mybrain.superkassa.core.domain.model.ofd.*
-import kz.mybrain.superkassa.core.domain.model.shift.*
-import kz.mybrain.superkassa.core.domain.model.common.*
-import kz.mybrain.superkassa.core.domain.model.auth.*
-import kz.mybrain.superkassa.core.domain.model.delivery.*
-import kz.mybrain.superkassa.core.domain.model.queue.*
-import kz.mybrain.superkassa.core.domain.model.report.*
-import kz.mybrain.superkassa.core.domain.model.receipt.*
-import kz.mybrain.superkassa.core.domain.model.zxreport.*
 
 @Suppress("LargeClass")
 object SharedStyles {
