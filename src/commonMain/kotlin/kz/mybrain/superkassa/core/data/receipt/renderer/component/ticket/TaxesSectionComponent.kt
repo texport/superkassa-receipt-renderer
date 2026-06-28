@@ -1,7 +1,5 @@
 package kz.mybrain.superkassa.core.data.receipt.renderer.component.ticket
 
-import kz.mybrain.superkassa.core.domain.model.receipt.*
-
 import kz.mybrain.superkassa.core.data.receipt.renderer.base.formatted
 import kz.mybrain.superkassa.core.data.receipt.renderer.base.translationKey
 import kz.mybrain.superkassa.core.domain.model.receipt.TaxLine

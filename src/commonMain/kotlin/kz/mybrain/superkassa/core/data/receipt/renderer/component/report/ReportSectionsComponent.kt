@@ -1,7 +1,5 @@
 package kz.mybrain.superkassa.core.data.receipt.renderer.component.report
 
-import kz.mybrain.superkassa.core.domain.model.zxreport.*
-
 import kz.mybrain.superkassa.core.domain.model.zxreport.OperationAggregate
 import kz.mybrain.superkassa.core.domain.model.zxreport.SectionAggregate
 import kz.mybrain.superkassa.core.data.receipt.renderer.base.toDiscountKey

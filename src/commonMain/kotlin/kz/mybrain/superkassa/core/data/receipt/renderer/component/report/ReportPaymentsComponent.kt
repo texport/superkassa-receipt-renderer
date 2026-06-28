@@ -1,7 +1,5 @@
 package kz.mybrain.superkassa.core.data.receipt.renderer.component.report
 
-import kz.mybrain.superkassa.core.domain.model.zxreport.*
-
 import kz.mybrain.superkassa.core.domain.model.zxreport.TicketOperationAggregate
 import kz.mybrain.superkassa.core.data.receipt.renderer.base.toOperationKey
 import kz.mybrain.superkassa.core.data.receipt.renderer.base.toPaymentKey
