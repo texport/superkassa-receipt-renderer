@@ -1,10 +1,10 @@
 plugins {
-    alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.detekt)
     alias(libs.plugins.nmcp)
-    id("maven-publish")
-    id("signing")
-    id("jacoco")
+    alias(libs.plugins.kotlin.multiplatform)
+    `maven-publish`
+    signing
+    jacoco
 }
 
 group = "io.github.texport"
@@ -15,77 +15,65 @@ repositories {
     mavenCentral()
 }
 
-detekt {
-    config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
-    buildUponDefaultConfig = true
-    allRules = true
-    autoCorrect = true
-}
-
-dependencies {
-    implementation(libs.superkassa.core)
-    implementation(libs.kotlinx.serialization.json)
-    implementation(libs.slf4j.api)
-    
-    testImplementation(kotlin("test"))
-    testImplementation(libs.mockk)
-    testImplementation(libs.zxing.core)
-    testImplementation(libs.zxing.javase)
-    detektPlugins(libs.detekt.formatting)
-}
-
 kotlin {
+    jvm()
+    
+    iosArm64()
+    iosX64()
+    iosSimulatorArm64()
+
     jvmToolchain(17)
-}
 
-tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
-    jvmTarget = "17"
-}
-
-val sourcesJar = tasks.register<Jar>("sourcesJar") {
-    description = "Generates the sources JAR artifact"
-    archiveClassifier.set("sources")
-    from(sourceSets.main.get().allSource)
-}
-
-val javadocJar = tasks.register<Jar>("javadocJar") {
-    description = "Generates the javadoc JAR artifact"
-    archiveClassifier.set("javadoc")
-    from(tasks.javadoc)
+    sourceSets {
+        commonMain {
+            dependencies {
+                implementation(libs.superkassa.core.domain)
+                implementation(libs.kotlinx.serialization.json)
+                implementation(libs.kotlinx.datetime)
+            }
+        }
+        jvmMain {
+            dependencies {
+                implementation(libs.slf4j.api)
+                implementation(libs.zxing.core)
+                implementation(libs.zxing.javase)
+            }
+        }
+        jvmTest {
+            dependencies {
+                implementation(kotlin("test"))
+                implementation(libs.mockk)
+            }
+        }
+    }
 }
 
 publishing {
-    publications {
-        create<MavenPublication>("mavenJava") {
-            from(components["java"])
-            artifact(sourcesJar)
-            artifact(javadocJar)
+    publications.withType<MavenPublication>().configureEach {
+        pom {
+            name.set("superkassa-receipt-renderer")
+            description.set("HTML/text receipt rendering engine for Superkassa")
+            url.set("https://github.com/texport/superkassa-receipt-renderer")
 
-            pom {
-                name.set("superkassa-receipt-renderer")
-                description.set("HTML/text receipt rendering engine for Superkassa")
+            licenses {
+                license {
+                    name.set("The Apache License, Version 2.0")
+                    url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+                }
+            }
+
+            developers {
+                developer {
+                    id.set("sergeyivanov")
+                    name.set("Sergey Ivanov")
+                    email.set("ivanov.sergey.ekb@gmail.com")
+                }
+            }
+
+            scm {
+                connection.set("scm:git:git://github.com/texport/superkassa-receipt-renderer.git")
+                developerConnection.set("scm:git:ssh://github.com/texport/superkassa-receipt-renderer.git")
                 url.set("https://github.com/texport/superkassa-receipt-renderer")
-
-                licenses {
-                    license {
-                        name.set("The Apache License, Version 2.0")
-                        url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
-                    }
-                }
-
-                developers {
-                    developer {
-                        id.set("sergeyivanov")
-                        name.set("Sergey Ivanov")
-                        email.set("ivanov.sergey.ekb@gmail.com")
-                    }
-                }
-
-                scm {
-                    connection.set("scm:git:git://github.com/texport/superkassa-receipt-renderer.git")
-                    developerConnection.set("scm:git:ssh://github.com/texport/superkassa-receipt-renderer.git")
-                    url.set("https://github.com/texport/superkassa-receipt-renderer")
-                }
             }
         }
     }
@@ -97,7 +85,7 @@ signing {
     if (!signingKey.isNullOrEmpty() && !signingPassword.isNullOrEmpty()) {
         useInMemoryPgpKeys(signingKey, signingPassword)
     }
-    sign(publishing.publications["mavenJava"])
+    sign(publishing.publications)
 }
 
 nmcp {
@@ -108,20 +96,45 @@ nmcp {
     }
 }
 
-tasks.withType<JavaCompile> {
-    options.encoding = "UTF-8"
+jacoco {
+    toolVersion = "0.8.12"
 }
 
-tasks.test {
-    useJUnitPlatform()
-    systemProperty("file.encoding", "UTF-8")
-    finalizedBy(tasks.jacocoTestReport)
-}
-
-tasks.jacocoTestReport {
-    dependsOn(tasks.test)
+val jacocoTestReport = tasks.register<JacocoReport>("jacocoTestReport") {
+    dependsOn(tasks.named("jvmTest"))
+    classDirectories.setFrom(files(tasks.named("compileKotlinJvm")))
+    sourceDirectories.setFrom(files("src/commonMain/kotlin", "src/jvmMain/kotlin"))
+    executionData.setFrom(files(layout.buildDirectory.file("jacoco/jvmTest.exec")))
     reports {
         xml.required.set(true)
         html.required.set(true)
     }
+}
+
+val jacocoTestCoverageVerification = tasks.register<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
+    dependsOn(jacocoTestReport)
+    executionData.setFrom(files(layout.buildDirectory.file("jacoco/jvmTest.exec")))
+    classDirectories.setFrom(files(tasks.named("compileKotlinJvm")))
+    violationRules {
+        rule {
+            limit {
+                minimum = "0.93".toBigDecimal()
+            }
+        }
+    }
+}
+
+tasks.check {
+    dependsOn(jacocoTestCoverageVerification)
+}
+
+detekt {
+    config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
+    buildUponDefaultConfig = true
+    allRules = true
+    autoCorrect = true
+}
+
+tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
+    jvmTarget = "17"
 }
