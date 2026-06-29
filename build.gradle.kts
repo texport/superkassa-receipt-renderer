@@ -84,6 +84,12 @@ kotlin {
 
 publishing {
     publications.withType<MavenPublication>().configureEach {
+        val javadocJarTask = tasks.register<Jar>("${name}JavadocJar") {
+            description = "Generates Javadoc jar for publication ${this@configureEach.name}"
+            archiveClassifier.set("javadoc")
+            archiveAppendix.set(this@configureEach.name)
+        }
+        artifact(javadocJarTask)
         pom {
             name.set("superkassa-receipt-renderer")
             description.set("HTML/text receipt rendering engine for Superkassa")
