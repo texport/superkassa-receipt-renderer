@@ -14,7 +14,6 @@ java = "17"
 slf4j-api = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4j" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
 kotlinx-datetime = { group = "org.jetbrains.kotlinx", name = "kotlinx-datetime", version.ref = "kotlinxDatetime" }
-superkassa-core = { group = "kz.mybrain", name = "superkassa-core", version.ref = "superkassaCore" }
 superkassa-core-domain = { group = "kz.mybrain", name = "core-domain", version.ref = "superkassaCore" }
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 detekt-formatting = { group = "io.gitlab.arturbosch.detekt", name = "detekt-formatting", version.ref = "detekt" }
@@ -22,7 +21,6 @@ zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" 
 zxing-javase = { group = "com.google.zxing", name = "javase", version.ref = "zxing" }
 
 [plugins]
-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
 nmcp = { id = "com.gradleup.nmcp", version.ref = "nmcp" }
