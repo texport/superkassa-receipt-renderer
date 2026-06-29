@@ -10,3 +10,6 @@ build/
 
 # Android local configs
 local.properties
+
+# Kotlin
+.kotlin/

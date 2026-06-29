@@ -2,7 +2,7 @@
 kotlin = "2.4.0"
 slf4j = "2.0.18"
 detekt = "1.23.8"
-superkassaCore = "1.0"
+superkassaCore = "1.0.0"
 serialization = "1.11.0"
 kotlinxDatetime = "0.6.1"
 nmcp = "1.5.0"
@@ -14,7 +14,7 @@ java = "17"
 slf4j-api = { group = "org.slf4j", name = "slf4j-api", version.ref = "slf4j" }
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
 kotlinx-datetime = { group = "org.jetbrains.kotlinx", name = "kotlinx-datetime", version.ref = "kotlinxDatetime" }
-superkassa-core-domain = { group = "kz.mybrain", name = "core-domain", version.ref = "superkassaCore" }
+superkassa-core-domain = { group = "io.github.texport", name = "core-domain", version.ref = "superkassaCore" }
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 detekt-formatting = { group = "io.gitlab.arturbosch.detekt", name = "detekt-formatting", version.ref = "detekt" }
 zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
