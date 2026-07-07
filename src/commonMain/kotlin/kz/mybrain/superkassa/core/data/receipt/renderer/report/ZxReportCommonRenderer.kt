@@ -6,6 +6,8 @@ import kz.mybrain.superkassa.core.domain.model.shift.*
 import kz.mybrain.superkassa.core.domain.helper.zxreport.ZxReportBuilder
 import kz.mybrain.superkassa.core.data.receipt.renderer.base.BaseDocumentRenderer
 import kz.mybrain.superkassa.core.data.receipt.renderer.component.report.ReportCashOpsComponent
+import kz.mybrain.superkassa.core.data.receipt.renderer.component.report.ReportCashOpsInput
+import kz.mybrain.superkassa.core.data.receipt.renderer.base.StandardDocumentInput
 import kz.mybrain.superkassa.core.data.receipt.renderer.component.report.ReportNonNullableComponent
 import kz.mybrain.superkassa.core.data.receipt.renderer.component.report.ReportPaymentsComponent
 import kz.mybrain.superkassa.core.data.receipt.renderer.component.report.ReportSectionsComponent
@@ -30,7 +32,7 @@ abstract class ZxReportCommonRenderer : BaseDocumentRenderer() {
 
         val reportInput = ZxReportBuilder.build(
             counters = counters,
-            dateTimeMillis = shift.closedAt ?: kotlinx.datetime.Clock.System.now().toEpochMilliseconds(),
+            dateTimeMillis = shift.closedAt ?: kotlin.time.Clock.System.now().toEpochMilliseconds(),
             shiftNumber = shift.shiftNo.toInt(),
             openShiftTimeMillis = shift.openedAt,
             closeShiftTimeMillis = shift.closedAt
@@ -113,12 +115,14 @@ abstract class ZxReportCommonRenderer : BaseDocumentRenderer() {
         val cashOutCount = cashOutPl?.operationsCount ?: 0L
 
         val cashOperationsHtml = ReportCashOpsComponent.render(
-            cashInCount = cashInCount,
-            cashInSum = cashInSum,
-            cashOutCount = cashOutCount,
-            cashOutSum = cashOutSum,
-            cashSumBills = reportInput.cashSumBills,
-            revenueBills = reportInput.revenueBills,
+            input = ReportCashOpsInput(
+                cashInCount = cashInCount,
+                cashInSum = cashInSum,
+                cashOutCount = cashOutCount,
+                cashOutSum = cashOutSum,
+                cashSumBills = reportInput.cashSumBills,
+                revenueBills = reportInput.revenueBills
+            ),
             t = { t(it) },
             translateInlineKey = { translateInlineKey(it) },
             formatAmount = { formatAmount(it) }
@@ -137,15 +141,17 @@ abstract class ZxReportCommonRenderer : BaseDocumentRenderer() {
         """.trimIndent()
 
         return renderStandardDocument(
-            titleKey = titleKey,
-            kkm = kkm,
-            createdAt = reportInput.dateTimeMillis,
-            shiftNo = shift.shiftNo,
-            docNo = docNo,
-            ofdStatus = ofdStatus,
-            isFiscal = isZReport,
-            additionalMeta = additionalMeta,
-            bodyContent = bodyContent
+            StandardDocumentInput(
+                titleKey = titleKey,
+                kkm = kkm,
+                createdAt = reportInput.dateTimeMillis,
+                shiftNo = shift.shiftNo,
+                docNo = docNo,
+                ofdStatus = ofdStatus,
+                isFiscal = isZReport,
+                additionalMeta = additionalMeta,
+                bodyContent = bodyContent
+            )
         )
     }
 }

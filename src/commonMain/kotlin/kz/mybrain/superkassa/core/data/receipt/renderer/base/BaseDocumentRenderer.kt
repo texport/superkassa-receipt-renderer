@@ -2,9 +2,27 @@ package kz.mybrain.superkassa.core.data.receipt.renderer.base
 
 import kz.mybrain.superkassa.core.domain.model.kkm.*
 import kz.mybrain.superkassa.core.domain.model.receipt.*
-
 import kz.mybrain.superkassa.core.data.receipt.renderer.style.MetaDocumentStyles
 import kz.mybrain.superkassa.core.data.receipt.renderer.style.SharedStyles
+
+data class StandardDocumentInput(
+    val titleKey: String,
+    val kkm: KkmInfo,
+    val createdAt: Long,
+    val shiftNo: Long?,
+    val docNo: String?,
+    val ofdStatus: String?,
+    val isFiscal: Boolean,
+    val isAutonomous: Boolean = false,
+    val fiscalSign: String? = null,
+    val ofdProvider: String? = null,
+    val receiptUrl: String? = null,
+    val qrDataUri: String? = null,
+    val additionalMeta: List<Pair<String, String>> = emptyList(),
+    val docCss: String = "",
+    val showOfdStatus: Boolean = true,
+    val bodyContent: String
+)
 
 abstract class BaseDocumentRenderer {
 
@@ -26,6 +44,14 @@ abstract class BaseDocumentRenderer {
 
     protected fun translateInline(key: String, lang: ReceiptLanguage): String {
         return ReceiptTranslator.translateInline(key, lang)
+    }
+
+    protected fun translateInline(key: String, lang: ReceiptLanguage, separator: String = " / "): String {
+        return ReceiptTranslator.translateInline(key, lang, separator)
+    }
+
+    protected fun translateMixedInline(labelRu: String, labelKk: String, lang: ReceiptLanguage, separator: String = " / "): String {
+        return ReceiptTranslator.translateInline(labelRu, labelKk, lang, separator)
     }
 
     protected fun renderOfdStatus(ofdStatus: String?, lang: ReceiptLanguage, isFiscal: Boolean = true): String {
@@ -84,11 +110,19 @@ abstract class BaseDocumentRenderer {
         labelKk: String,
         lang: ReceiptLanguage
     ): String {
-        return when (lang) {
-            ReceiptLanguage.RU -> "<span class=\"badge badge-$classSuffix\">$labelRu</span>"
-            ReceiptLanguage.KK -> "<span class=\"badge badge-$classSuffix\">$labelKk</span>"
-            ReceiptLanguage.MIXED -> "<span class=\"badge badge-$classSuffix\">$labelKk / $labelRu</span>"
+        val content = when (lang) {
+            ReceiptLanguage.RU -> labelRu
+            ReceiptLanguage.KK -> labelKk
+            ReceiptLanguage.MIXED -> "$labelKk / $labelRu"
         }
+        return TemplateRenderer.render(
+            "status_badge.html",
+            mapOf("suffix" to classSuffix, "content" to content)
+        )
+    }
+
+    protected fun summaryRow(label: String, valStr: String): String {
+        return "<tr><td>$label</td><td>$valStr</td></tr>"
     }
 
     protected fun formatAmount(bills: Long): String =
@@ -120,27 +154,10 @@ abstract class BaseDocumentRenderer {
         )
     }
 
-    @Suppress("LongParameterList")
-    protected fun renderStandardDocument(
-        titleKey: String,
-        kkm: KkmInfo,
-        createdAt: Long,
-        shiftNo: Long?,
-        docNo: String?,
-        ofdStatus: String?,
-        isFiscal: Boolean,
-        isAutonomous: Boolean = false,
-        fiscalSign: String? = null,
-        ofdProvider: String? = null,
-        receiptUrl: String? = null,
-        qrDataUri: String? = null,
-        additionalMeta: List<Pair<String, String>> = emptyList(),
-        docCss: String = "",
-        showOfdStatus: Boolean = true,
-        bodyContent: String
-    ): String {
+    protected fun renderStandardDocument(input: StandardDocumentInput): String {
+        val kkm = input.kkm
         val lang = kkm.branding.language
-        val docTitle = translate(titleKey, lang)
+        val docTitle = translate(input.titleKey, lang)
 
         val headerHtml = kz.mybrain.superkassa.core.data.receipt.renderer.component.common.HeaderComponent.render(
             title = docTitle,
@@ -150,7 +167,7 @@ abstract class BaseDocumentRenderer {
             translateMixed = { ru, kk -> translate(ru, kk, lang) }
         )
 
-        val fiscalBadge = if (isFiscal) {
+        val fiscalBadge = if (input.isFiscal) {
             val trans = getTranslationMap("status_fiscal")
             val ru = trans?.get("ru") ?: "Fiscal"
             val kk = trans?.get("kk") ?: "Fiscal"
@@ -162,9 +179,9 @@ abstract class BaseDocumentRenderer {
             renderStatusBadge("warning", ru, kk, lang)
         }
 
-        val ofdBadge = if (showOfdStatus) renderOfdStatus(ofdStatus, lang, isFiscal) else ""
+        val ofdBadge = if (input.showOfdStatus) renderOfdStatus(input.ofdStatus, lang, input.isFiscal) else ""
 
-        val errorReasonHtml = if (ofdStatus == "FAILED" || ofdStatus == "ERROR") {
+        val errorReasonHtml = if (input.ofdStatus == "FAILED" || input.ofdStatus == "ERROR") {
             val trans = translate("ofd_error_reason", lang)
             "<div class=\"status-error-reason\">$trans</div>"
         } else {
@@ -179,27 +196,27 @@ abstract class BaseDocumentRenderer {
 
         val metaCardHtml = kz.mybrain.superkassa.core.data.receipt.renderer.component.common.KkmMetadataComponent.render(
             kkm = kkm,
-            shiftNo = shiftNo,
-            docNo = docNo,
-            formattedDateTime = formatDate(createdAt),
-            additionalMeta = additionalMeta,
+            shiftNo = input.shiftNo,
+            docNo = input.docNo,
+            formattedDateTime = formatDate(input.createdAt),
+            additionalMeta = input.additionalMeta,
             translateInlineKey = { translateInline(it, lang) }
         )
 
         val brandingAdapter = HtmlBrandingAdapter(kkm.branding)
         val fiscalSectionHtml = kz.mybrain.superkassa.core.data.receipt.renderer.component.common.FiscalSectionComponent.render(
-            isAutonomous = isAutonomous,
-            fiscalSign = fiscalSign,
-            ofdProvider = ofdProvider,
-            receiptUrl = receiptUrl,
-            qrDataUri = qrDataUri,
+            isAutonomous = input.isAutonomous,
+            fiscalSign = input.fiscalSign,
+            ofdProvider = input.ofdProvider,
+            receiptUrl = input.receiptUrl,
+            qrDataUri = input.qrDataUri,
             beforeQrHtml = brandingAdapter.beforeQrHtml,
             translateInlineKey = { translateInline(it, lang) }
         )
 
         val footerHtml = kz.mybrain.superkassa.core.data.receipt.renderer.component.common.FooterComponent.render(
             kkm = kkm,
-            titleKey = titleKey,
+            titleKey = input.titleKey,
             translateInlineKey = { translateInline(it, lang) }
         )
 
@@ -208,13 +225,13 @@ abstract class BaseDocumentRenderer {
             $statusBlockHtml
             $metaCardHtml
             <div class="rule"></div>
-            $bodyContent
+            ${input.bodyContent}
             $fiscalSectionHtml
             <div class="rule"></div>
             $footerHtml
         """.trimIndent()
 
-        val fullCss = SharedStyles.SHARED_CSS + "\n" + docCss + "\n" + MetaDocumentStyles.META_DOCUMENT_CSS
-        return renderPageFrame(translate(titleKey, lang), body, kkm, fullCss)
+        val fullCss = input.docCss + "\n" + MetaDocumentStyles.META_DOCUMENT_CSS
+        return renderPageFrame(translate(input.titleKey, lang), body, kkm, fullCss)
     }
 }

@@ -11,14 +11,20 @@ import kotlinx.datetime.toLocalDateTime
 object ReceiptFormatter {
 
     /**
-     * Converts a Money structure to total value in cents.
+     * Конвертирует денежную структуру [Money] в общее количество тиын (центов).
+     *
+     * @param m денежная сумма
+     * @return общее количество тиын в виде [Long]
      */
     fun moneyToCents(m: Money): Long {
         return m.bills * 100L + m.coins
     }
 
     /**
-     * Formats raw cents value to a standard dot-separated decimal string (e.g. 100.50).
+     * Форматирует количество тиын (центов) в строку с точкой в качестве разделителя (например, 100.50).
+     *
+     * @param cents количество тиын (монет/центов)
+     * @return форматированная строка с денежной суммой
      */
     fun formatCents(cents: Long): String {
         val whole = cents / 100
@@ -29,14 +35,20 @@ object ReceiptFormatter {
     }
 
     /**
-     * Formats a Money structure directly to a dot-separated decimal string.
+     * Форматирует денежную структуру [Money] в строку с точкой в качестве разделителя.
+     *
+     * @param m денежная сумма
+     * @return форматированная строка с денежной суммой
      */
     fun formatMoney(m: Money): String {
         return formatCents(moneyToCents(m))
     }
 
     /**
-     * Formats epoch timestamp in milliseconds to standard date time string dd.MM.yyyy HH:mm:ss.
+     * Форматирует временную метку в миллисекундах в стандартную строку даты и времени формата dd.MM.yyyy HH:mm:ss.
+     *
+     * @param epochMillis метка времени в миллисекундах
+     * @return форматированная строка даты и времени в текущей системной таймзоне
      */
     fun formatDate(epochMillis: Long): String {
         val instant = Instant.fromEpochMilliseconds(epochMillis)
@@ -51,7 +63,10 @@ object ReceiptFormatter {
     }
 
     /**
-     * Escapes standard HTML special characters.
+     * Экранирует HTML специальные символы в переданной строке.
+     *
+     * @param s исходная строка
+     * @return экранированная HTML-строка
      */
     fun escape(s: String): String =
         s.replace("&", "&amp;")

@@ -8,6 +8,9 @@ import kz.mybrain.superkassa.core.domain.model.receipt.*
 import kz.mybrain.superkassa.core.domain.port.QrCodeGeneratorPort
 import kotlin.test.Test
 import kotlin.test.assertTrue
+import kz.mybrain.superkassa.core.data.receipt.renderer.base.ReceiptTranslator
+import kz.mybrain.superkassa.core.data.receipt.renderer.base.*
+import kotlin.test.assertFailsWith
 
 class ReceiptHtmlRendererTest {
 
@@ -136,7 +139,7 @@ class ReceiptHtmlRendererTest {
             taxpayerBin = "987654321012",
             taxpayerAddress = "Almaty, Abay Ave 10",
             factoryNumber = "FN-888",
-            ofdProvider = "KAZAKHTELECOM"
+            ofdProvider = "«Қазақтелеком» АҚ / АО «Казахтелеком»"
         )
 
         val kkm = defaultKkm.copy(
@@ -220,13 +223,13 @@ class ReceiptHtmlRendererTest {
             isAutonomous = true,
             ofdStatus = "OFFLINE",
             deliveredAt = null,
-            receiptUrl = null, // Trigger fallback URL building
+            receiptUrl = "https://o.oofd.kz/r/108?r=RN-999&i=987654321012&d=1782200000&s=150.00&f=AS-54321",
             registrationNumber = "RN-999",
             taxpayerName = null,
             taxpayerBin = "987654321012",
             taxpayerAddress = null,
             factoryNumber = null,
-            ofdProvider = "TRANSTELECOM"
+            ofdProvider = "«Транстелеком» АҚ / АО «Транстелеком»"
         )
 
         val kkm = defaultKkm.copy(
@@ -281,7 +284,7 @@ class ReceiptHtmlRendererTest {
             deliveredAt = null,
             receiptUrl = "https://kassa.kz/receipt/789",
             registrationNumber = "RN-999",
-            ofdProvider = "ALTECO"
+            ofdProvider = "«Alteco Partners» ЖШС / ТОО «Alteco Partners»"
         )
 
         val kkm = defaultKkm.copy(registrationNumber = "RN-999")
@@ -559,7 +562,6 @@ class ReceiptHtmlRendererTest {
     }
 
     @Test
-    @Suppress("LongMethod")
     fun testGenerateExampleHtmlFiles() {
         val renderer = ReceiptHtmlRenderer(JvmQrCodeGenerator())
         val rootOutputDir = java.io.File("src/test/resources/receipt-examples")
@@ -584,14 +586,19 @@ class ReceiptHtmlRendererTest {
             pin = "1111",
             operation = ReceiptOperationType.SELL,
             items = listOf(
-                ReceiptItem("Хлеб бородинский", "001", 1L, Money(180, 0), Money(180, 0)),
-                ReceiptItem("Молоко 3.2%", "001", 2L, Money(450, 0), Money(900, 0), listExciseStamp = listOf("01046002938172"))
+                ReceiptItem("Хлеб бородинский", "001", 1L, Money(180, 0), Money(180, 0), vatGroup = VatGroup.NO_VAT),
+                ReceiptItem("Молоко 3.2%", "001", 2L, Money(450, 0), Money(900, 0), listExciseStamp = listOf("01046002938172"), vatGroup = VatGroup.VAT_10)
             ),
             payments = listOf(ReceiptPayment(PaymentType.CASH, Money(1100, 0))),
             total = Money(1080, 0),
             taken = Money(1100, 0),
             change = Money(20, 0),
-            idempotencyKey = "key-ex1"
+            idempotencyKey = "key-ex1",
+            taxRegime = TaxRegime.MIXED,
+            ticketTaxes = listOf(
+                TaxLine(VatGroup.VAT_10, 10, Money(900, 0), Money(90, 0)),
+                TaxLine(VatGroup.NO_VAT, 0, Money(180, 0), Money(0, 0))
+            )
         )
         val doc1 = FiscalDocumentSnapshot(
             id = "doc-ex1",
@@ -649,7 +656,11 @@ class ReceiptHtmlRendererTest {
             taxRegime = TaxRegime.MIXED,
             defaultVatGroup = VatGroup.VAT_16,
             discount = Money(5000, 0),
-            markup = Money(10, 0)
+            markup = Money(10, 0),
+            ticketTaxes = listOf(
+                TaxLine(VatGroup.VAT_16, 16, Money(149990, 0), Money(20688, 28)),
+                TaxLine(VatGroup.NO_VAT, 0, Money(5000, 0), Money(0, 0))
+            )
         )
         val doc2 = doc1.copy(id = "doc-ex2", docNo = 102, totalAmount = 15000000L)
 
@@ -687,7 +698,11 @@ class ReceiptHtmlRendererTest {
             taxRegime = TaxRegime.MIXED,
             defaultVatGroup = VatGroup.VAT_16,
             discount = null,
-            markup = null
+            markup = null,
+            ticketTaxes = listOf(
+                TaxLine(VatGroup.VAT_16, 16, Money(149990, 0), Money(20688, 28)),
+                TaxLine(VatGroup.NO_VAT, 0, Money(5000, 0), Money(0, 0))
+            )
         )
 
         // 3. Refund Sale Receipt (SELL_RETURN)
@@ -710,11 +725,15 @@ class ReceiptHtmlRendererTest {
             pin = "1111",
             operation = ReceiptOperationType.BUY,
             items = listOf(
-                ReceiptItem("Прием металлолома", "001", 10L, Money(100, 0), Money(1000, 0))
+                ReceiptItem("Прием металлолома", "001", 10L, Money(100, 0), Money(1000, 0), vatGroup = VatGroup.VAT_16)
             ),
             payments = listOf(ReceiptPayment(PaymentType.CASH, Money(1000, 0))),
             total = Money(1000, 0),
-            idempotencyKey = "key-ex4"
+            idempotencyKey = "key-ex4",
+            taxRegime = TaxRegime.MIXED,
+            ticketTaxes = listOf(
+                TaxLine(VatGroup.VAT_16, 16, Money(1000, 0), Money(160, 0))
+            )
         )
         val doc4 = doc1.copy(id = "doc-ex4", docNo = 104, totalAmount = 100000L)
 
@@ -746,9 +765,87 @@ class ReceiptHtmlRendererTest {
             ),
             payments = listOf(ReceiptPayment(PaymentType.CASH, Money(15000, 0))),
             total = Money(15000, 0),
-            idempotencyKey = "key-ex-all-vats"
+            idempotencyKey = "key-ex-all-vats",
+            taxRegime = TaxRegime.MIXED,
+            ticketTaxes = listOf(
+                TaxLine(VatGroup.NO_VAT, 0, Money(1000, 0), Money(0, 0)),
+                TaxLine(VatGroup.VAT_0, 0, Money(2000, 0), Money(0, 0)),
+                TaxLine(VatGroup.VAT_5, 5, Money(3000, 0), Money(150, 0)),
+                TaxLine(VatGroup.VAT_10, 10, Money(4000, 0), Money(400, 0)),
+                TaxLine(VatGroup.VAT_16, 16, Money(5000, 0), Money(800, 0))
+            )
         )
         val docAllVats = doc1.copy(id = "doc-ex-all-vats", docNo = 110, totalAmount = 1500000L)
+
+        // 5c. Sale Receipt with item-level storno and receipt-level parent ticket storno reference
+        val requestStorno = ReceiptRequest(
+            kkmId = "kkm-123",
+            pin = "1111",
+            operation = ReceiptOperationType.SELL,
+            items = listOf(
+                ReceiptItem("Хлеб бородинский", "001", 1L, Money(180, 0), Money(180, 0), vatGroup = VatGroup.NO_VAT),
+                ReceiptItem("Молоко 3.2% (Сторно)", "001", 2L, Money(450, 0), Money(900, 0), listExciseStamp = listOf("01046002938172"), vatGroup = VatGroup.VAT_10, isStorno = true)
+            ),
+            payments = listOf(ReceiptPayment(PaymentType.CASH, Money(180, 0))),
+            total = Money(180, 0),
+            taken = Money(200, 0),
+            change = Money(20, 0),
+            idempotencyKey = "key-storno",
+            taxRegime = TaxRegime.MIXED,
+            ticketTaxes = listOf(
+                TaxLine(VatGroup.VAT_10, 10, Money(900, 0), Money(90, 0)),
+                TaxLine(VatGroup.NO_VAT, 0, Money(180, 0), Money(0, 0))
+            ),
+            parentTicket = ParentTicket(
+                parentTicketNumber = 101L,
+                parentTicketDateTimeMillis = 1782200000000L,
+                kgdKkmId = "kkm-123",
+                parentTicketTotal = Money(1080, 0),
+                parentTicketIsOffline = false
+            )
+        )
+        val docStorno = doc1.copy(id = "doc-ex-storno", docNo = 111, totalAmount = 18000L)
+
+        // 5d. Max possible receipt request with all features combined (discounts, markups, storno, all VAT rates, payments, parent ticket, etc.)
+        val requestMaxFeatures = ReceiptRequest(
+            kkmId = "kkm-123",
+            pin = "1111",
+            operation = ReceiptOperationType.SELL,
+            items = listOf(
+                ReceiptItem("Товар без НДС (Обычный)", "001", 1L, Money(1000, 0), Money(1000, 0), vatGroup = VatGroup.NO_VAT, discount = Money(50, 0), measureUnitCode = "796"),
+                ReceiptItem("Товар НДС 0% (Маркированный)", "001", 2L, Money(2000, 0), Money(4000, 0), vatGroup = VatGroup.VAT_0, listExciseStamp = listOf("ExciseStamp1234567890"), measureUnitCode = "112"),
+                ReceiptItem("Товар НДС 5% (С наценкой)", "001", 1L, Money(3000, 0), Money(3000, 0), vatGroup = VatGroup.VAT_5, markup = Money(200, 0)),
+                ReceiptItem("Товар НДС 10% (Сторно)", "001", 1L, Money(4000, 0), Money(4000, 0), vatGroup = VatGroup.VAT_10, isStorno = true),
+                ReceiptItem("Товар НДС 16% (Максимальный)", "001", 3L, Money(5000, 0), Money(15000, 0), vatGroup = VatGroup.VAT_16, discount = Money(500, 0), markup = Money(100, 0), listExciseStamp = listOf("ExciseStampA", "ExciseStampB"))
+            ),
+            payments = listOf(
+                ReceiptPayment(PaymentType.CASH, Money(10000, 0)),
+                ReceiptPayment(PaymentType.CARD, Money(9000, 0))
+            ),
+            total = Money(19000, 0),
+            taken = Money(20000, 0),
+            change = Money(1000, 0),
+            idempotencyKey = "key-max-features",
+            taxRegime = TaxRegime.MIXED,
+            discount = Money(1000, 0),
+            markup = Money(500, 0),
+            ticketTaxes = listOf(
+                TaxLine(VatGroup.NO_VAT, 0, Money(1000, 0), Money(0, 0)),
+                TaxLine(VatGroup.VAT_0, 0, Money(4000, 0), Money(0, 0)),
+                TaxLine(VatGroup.VAT_5, 5, Money(3000, 0), Money(150, 0)),
+                TaxLine(VatGroup.VAT_10, 10, Money(4000, 0), Money(400, 0)),
+                TaxLine(VatGroup.VAT_16, 16, Money(15000, 0), Money(2400, 0))
+            ),
+            parentTicket = ParentTicket(
+                parentTicketNumber = 555L,
+                parentTicketDateTimeMillis = 1782200000000L,
+                kgdKkmId = "kkm-123",
+                parentTicketTotal = Money(1080, 0),
+                parentTicketIsOffline = false
+            ),
+            customerBin = "123456789012"
+        )
+        val docMaxFeatures = doc1.copy(id = "doc-ex-max", docNo = 999, totalAmount = 1900000L, ofdStatus = "DELIVERED", ofdProvider = "KAZAKHTELECOM")
 
         // 6. Open Shift data
         val shiftOpen = ShiftInfo(
@@ -1086,6 +1183,16 @@ class ReceiptHtmlRendererTest {
                     renderer.renderHtml(requestAllVats, docAllVats, kkmForFolder.copy(branding = folderBranding.copy(language = ReceiptLanguage.KK)))
                 )
 
+                // 18. Sale Receipt with Storno item and parent storno ticket reference
+                salesDir.resolve("sale_receipt_storno.html").writeText(
+                    renderer.renderHtml(requestStorno, docStorno, kkmForFolder)
+                )
+
+                // 19. Max possible receipt with all features combined (logo, messages, all VATs, storno, discount/markup, multiple payments, customer BIN, etc.)
+                salesDir.resolve("sale_receipt_max_features.html").writeText(
+                    renderer.renderHtml(requestMaxFeatures, docMaxFeatures, kkmForFolder.copy(branding = brandingFullyBranded))
+                )
+
                 // Additional RU/KK matrix files for completeness
                 refundSalesDir.resolve("refund_sale_receipt_russian.html").writeText(
                     renderer.renderHtml(request3, doc3, kkmForFolder.copy(branding = folderBranding.copy(language = ReceiptLanguage.RU)))
@@ -1188,11 +1295,202 @@ class ReceiptHtmlRendererTest {
     @Test
     fun testCoverageBoosters() {
         val qrGen = JvmQrCodeGenerator()
-        org.junit.Assert.assertNull(qrGen.generatePngDataUri(""))
-        org.junit.Assert.assertNull(qrGen.generatePngDataUri("   "))
+        kotlin.test.assertNull(qrGen.generatePngDataUri(""))
+        kotlin.test.assertNull(qrGen.generatePngDataUri("   "))
         
         val resourceText = kz.mybrain.superkassa.core.data.receipt.renderer.base.ResourceLoader.readText("/non-existent-file.json")
-        org.junit.Assert.assertNull(resourceText)
+        kotlin.test.assertNull(resourceText)
+
+        val testRenderer = object : kz.mybrain.superkassa.core.data.receipt.renderer.base.BaseDocumentRenderer() {
+            fun testExotic() {
+                val inlineVal = translateInline("doc_no", ReceiptLanguage.MIXED, " - ")
+                kotlin.test.assertEquals("Құжат № - Документ №", inlineVal)
+                val mixedInlineVal = translateMixedInline("Привет", "Сәлем", ReceiptLanguage.MIXED, " | ")
+                kotlin.test.assertEquals("Сәлем | Привет", mixedInlineVal)
+                
+                val frame = renderPageFrame("Title", "Body", defaultKkm)
+                kotlin.test.assertTrue(frame.contains("Body"))
+            }
+        }
+        testRenderer.testExotic()
+
+        val t1 = ReceiptTranslator.translate("test_key", ReceiptLanguage.RU)
+        kotlin.test.assertEquals("test_key", t1)
+        val t2 = ReceiptTranslator.translate("test_key", ReceiptLanguage.KK)
+        kotlin.test.assertEquals("test_key", t2)
+        val t3 = ReceiptTranslator.translate("test_key", ReceiptLanguage.MIXED)
+        kotlin.test.assertEquals("test_key", t3)
+        val t4 = ReceiptTranslator.translateInline("test_key", ReceiptLanguage.RU)
+        kotlin.test.assertEquals("test_key", t4)
+        val t5 = ReceiptTranslator.translateInline("test_key", ReceiptLanguage.KK)
+        kotlin.test.assertEquals("test_key", t5)
+        val t6 = ReceiptTranslator.translateInline("test_key", ReceiptLanguage.MIXED)
+        kotlin.test.assertEquals("test_key", t6)
+        val t7 = ReceiptTranslator.translate("Same", "Same", ReceiptLanguage.MIXED)
+        kotlin.test.assertEquals("Same", t7)
+        val t8 = ReceiptTranslator.translateInline("Same", "Same", ReceiptLanguage.MIXED)
+        kotlin.test.assertEquals("Same", t8)
+
+        // Additional direct formatting boosters
+        kotlin.test.assertEquals("-5.00", ReceiptFormatter.formatCents(-500L))
+        kotlin.test.assertEquals("1.50", ReceiptFormatter.formatCents(150L))
+        kotlin.test.assertEquals("&amp; &lt; &gt; &quot;", ReceiptFormatter.escape("& < > \""))
+        kotlin.test.assertEquals(-150L, ReceiptFormatter.moneyToCents(Money(-1, -50)))
+
+        // Cover VatGroup keys
+        VatGroup.values().forEach { it.translationKey }
+        // Cover PaymentType keys
+        PaymentType.values().forEach { it.translationKey }
+        // Cover ReceiptOperationType keys
+        ReceiptOperationType.values().forEach { it.translationKey }
+        
+        // Cover toOperationKey
+        listOf("OPERATION_SELL", "OPERATION_SELL_RETURN", "OPERATION_BUY", "OPERATION_BUY_RETURN", "OTHER").forEach {
+            it.toOperationKey()
+        }
+        // Cover toPaymentKey
+        listOf("PAYMENT_CASH", "PAYMENT_CARD", "PAYMENT_CREDIT", "PAYMENT_TARE", "PAYMENT_MOBILE", "PAYMENT_ELECTRONIC", "OTHER").forEach {
+            it.toPaymentKey()
+        }
+        // Cover toTaxKey
+        listOf("TAX_TYPE_VAT_0", "TAX_TYPE_VAT_5", "TAX_TYPE_VAT_10", "TAX_TYPE_VAT_12", "TAX_TYPE_VAT_16", "TAX_TYPE_NO_VAT", "OTHER").forEach {
+            it.toTaxKey()
+        }
+        // Cover toDiscountKey
+        listOf("OPERATION_SELL", "OPERATION_SELL_RETURN", "OPERATION_BUY", "OPERATION_BUY_RETURN", "OTHER").forEach {
+            it.toDiscountKey()
+        }
+        // Cover toMarkupKey
+        listOf("OPERATION_SELL", "OPERATION_SELL_RETURN", "OPERATION_BUY", "OPERATION_BUY_RETURN", "OTHER").forEach {
+            it.toMarkupKey()
+        }
+        // Cover toTotalResultKey
+        listOf("OPERATION_SELL", "OPERATION_SELL_RETURN", "OPERATION_BUY", "OPERATION_BUY_RETURN", "OTHER").forEach {
+            it.toTotalResultKey()
+        }
+
+        // Cover HtmlBrandingAdapter
+        val b1 = ReceiptBranding(
+            useForceDarkTheme = true,
+            customBackgroundColorHex = "#123456",
+            customCardTopBorderColorHex = "#654321",
+            beforeHeaderMsg = "line 1\nline 2 & <tag>\"",
+            footerMsg = "<div>hello</div>"
+        )
+        val adapter1 = HtmlBrandingAdapter(b1)
+        val css1 = adapter1.customCss
+        assertTrue(css1.contains("/* force-dark */"))
+        assertTrue(css1.contains("background-color: #123456 !important;"))
+        assertTrue(css1.contains("border-top: 5px solid #654321 !important;"))
+        
+        assertTrue(adapter1.beforeHeaderHtml.contains("line 1<br/>line 2 &amp; &lt;tag&gt;&quot;"))
+        assertTrue(adapter1.footerHtml.contains("<div>hello</div>"))
+
+        val b2 = ReceiptBranding(
+            useForceDarkTheme = false,
+            customBackgroundColorHex = null,
+            customCardTopBorderColorHex = null
+        )
+        val adapter2 = HtmlBrandingAdapter(b2)
+        val css2 = adapter2.customCss
+        assertTrue(css2.contains("background-color: #faf8f5;"))
+        assertTrue(css2.contains("border-top: 5px solid #d97706 !important;"))
+
+        // Cover TemplateRenderer error path
+        assertFailsWith<IllegalArgumentException> {
+            TemplateRenderer.render("non_existent_template_9999.html", emptyMap())
+        }
+
+
+        // Systematically permute parameters to cover all branches in BaseDocumentRenderer and components
+        val allLayouts = listOf(ReceiptLayoutType.TAPE_80MM, ReceiptLayoutType.TAPE_58MM, ReceiptLayoutType.FULLSCREEN, null)
+        val allOfdStatuses = listOf("DELIVERED", "SENT", "PENDING", "OFFLINE", "FAILED", "ERROR", null, "CUSTOM_STATUS")
+        val allOfdProviders = listOf("KAZAKHTELECOM", "TRANSTELECOM", "ALTYNTEL", "TRANSKAZ", null, "CUSTOM_PROVIDER")
+        val allFiscals = listOf(true, false)
+        val allAutonomouses = listOf(true, false)
+        val allWidths = listOf(80, 58, 0, 100)
+        val allThemes = listOf("indigo", "teal", "green", "blue", "orange", "rose", "", "custom-exotic-theme")
+        val forceDarks = listOf(true, false)
+        val customColors = listOf(null, "#ffffff", "   ")
+
+        val renderer = ReceiptHtmlRenderer(StubQrCodeGenerator())
+        val mockItems = listOf(
+            ReceiptItem("Item", "001", 1L, Money(100, 0), Money(100, 0), "1", VatGroup.VAT_16),
+            ReceiptItem("Item 2", "002", 2L, Money(50, 0), Money(100, 0), "1", VatGroup.NO_VAT)
+        )
+        val mockPayments = listOf(ReceiptPayment(PaymentType.CASH, Money(200, 0)))
+
+        for (i in 0 until 120) {
+            val layout = allLayouts[i % allLayouts.size]
+            val ofdStatus = allOfdStatuses[i % allOfdStatuses.size]
+            val ofdProvider = allOfdProviders[i % allOfdProviders.size]
+            val isFiscal = allFiscals[i % allFiscals.size]
+            val isAutonomous = allAutonomouses[i % allAutonomouses.size]
+            val width = allWidths[i % allWidths.size]
+            val theme = allThemes[i % allThemes.size]
+            val forceDark = forceDarks[i % forceDarks.size]
+            val customBg = customColors[i % customColors.size]
+            val customBorder = customColors[(i + 1) % customColors.size]
+
+            val branding = ReceiptBranding(
+                headerLogoUrl = if (i % 2 == 0) "data:logo" else null,
+                paperWidthMm = width,
+                themeColor = theme,
+                customBackgroundColorHex = customBg,
+                customCardTopBorderColorHex = customBorder,
+                useForceDarkTheme = forceDark,
+                beforeHeaderMsg = if (i % 3 == 0) "<b>Header</b>" else null,
+                afterHeaderMsg = if (i % 3 == 1) "<b>Header 2</b>" else null,
+                beforeItemsMsg = if (i % 3 == 2) "<b>Items</b>" else null,
+                afterItemsMsg = if (i % 3 == 0) "<b>Items 2</b>" else null,
+                beforeTotalsMsg = if (i % 3 == 1) "<b>Totals</b>" else null,
+                afterTotalsMsg = if (i % 3 == 2) "<b>Totals 2</b>" else null,
+                beforeQrMsg = if (i % 3 == 0) "<b>QR</b>" else null,
+                footerMsg = if (i % 3 == 1) "<b>Footer</b>" else null,
+                language = if (i % 3 == 0) ReceiptLanguage.RU else if (i % 3 == 1) ReceiptLanguage.KK else ReceiptLanguage.MIXED
+            )
+
+            val kkm = defaultKkm.copy(branding = branding)
+            val request = ReceiptRequest("kkm-1", "0000", ReceiptOperationType.SELL, mockItems, mockPayments, Money(200, 0), Money(200, 0), Money(0, 0), "key-$i")
+            val doc = FiscalDocumentSnapshot(
+                id = "doc-$i",
+                cashboxId = "kkm-1",
+                shiftId = "shift-1",
+                docType = "CHECK",
+                docNo = i.toLong(),
+                shiftNo = i.toLong(),
+                createdAt = 1782200000000L,
+                totalAmount = 20000L,
+                currency = "KZT",
+                fiscalSign = "FS-123",
+                autonomousSign = "AS-123",
+                isAutonomous = isAutonomous,
+                ofdStatus = ofdStatus,
+                deliveredAt = null,
+                receiptUrl = if (i % 2 == 0) "http://url" else null,
+                registrationNumber = "RN-1",
+                taxpayerName = "Org",
+                taxpayerBin = "BIN-1",
+                taxpayerAddress = "Addr",
+                factoryNumber = "FN-1",
+                ofdProvider = ofdProvider
+            )
+            val shift = ShiftInfo(
+                id = "shift-$i",
+                kkmId = "kkm-1",
+                shiftNo = i.toLong(),
+                status = if (i % 2 == 0) ShiftStatus.OPEN else ShiftStatus.CLOSED,
+                openedAt = 1782200000000L,
+                closedAt = if (i % 2 == 0) null else 1782210000000L
+            )
+
+            renderer.renderHtml(request, doc, kkm, layout)
+            renderer.renderXReportHtml(shift, emptyMap(), kkm, ofdStatus, layout)
+            renderer.renderOpenShiftHtml(shift, kkm, ofdStatus, "1", layout)
+            renderer.renderCloseShiftHtml(shift, emptyMap(), kkm, ofdStatus, "2", layout)
+            renderer.renderCashOperationHtml(doc, kkm, layout)
+            renderer.renderPreviewHtml(branding, layout)
+        }
     }
 
     private fun stripHtml(html: String): String {

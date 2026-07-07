@@ -1,7 +1,7 @@
 # superkassa-receipt-renderer
 
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.texport/superkassa-receipt-renderer.svg?label=Maven%20Central)](https://central.sonatype.com/artifact/io.github.texport/superkassa-receipt-renderer)
-[![Version](https://img.shields.io/badge/version-1.0.3-blue.svg)](https://github.com/texport/superkassa-receipt-renderer/releases)
+[![Version](https://img.shields.io/badge/version-1.0.4-blue.svg)](https://github.com/texport/superkassa-receipt-renderer/releases)
 [![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen.svg)](#)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![CI Build](https://img.shields.io/github/actions/workflow/status/texport/superkassa-receipt-renderer/ci.yml?branch=main&label=CI%20Build)](https://github.com/texport/superkassa-receipt-renderer/actions)
@@ -32,13 +32,23 @@ It handles rendering of sale and return receipts, cash operations (in/out), shif
 
 ### Installation
 
+#### JVM Consumers (Gradle/Maven)
+
 Add the dependency to your `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("io.github.texport:superkassa-receipt-renderer:1.0.3")
+    implementation("io.github.texport:superkassa-receipt-renderer:1.0.4")
 }
 ```
+
+#### iOS Consumers (Swift Package Manager)
+
+Add the dependency in Xcode using the Swift Package Manager:
+
+*   **Repository URL:** `https://github.com/texport/superkassa-receipt-renderer.git`
+*   **Version:** `1.0.4`
+*   **Target:** `SuperkassaReceiptRenderer`
 
 ---
 
@@ -53,7 +63,7 @@ import kz.mybrain.superkassa.core.domain.model.*
 // 1. Instantiate renderer with a QR code generator adapter
 val renderer = ReceiptHtmlRenderer(
     qrCodeGenerator = myQrCodeGeneratorImpl,
-    ofdProviders = ReceiptHtmlRenderer.defaultOfdProviders // customize if needed
+    ofdProviders = myOfdProvidersMap // optional custom map of OFD provider configs
 )
 
 // 2. Prepare mock/real KkmInfo with branding config
@@ -169,13 +179,23 @@ val previewHtml = renderer.renderPreviewHtml(draftBranding)
 
 ### Установка
 
+#### JVM-потребители (Gradle/Maven)
+
 Добавьте зависимость в ваш `build.gradle.kts`:
 
 ```kotlin
 dependencies {
-    implementation("io.github.texport:superkassa-receipt-renderer:1.0.3")
+    implementation("io.github.texport:superkassa-receipt-renderer:1.0.4")
 }
 ```
+
+#### iOS-потребители (Swift Package Manager)
+
+Добавьте зависимость в Xcode с помощью Swift Package Manager:
+
+*   **Repository URL:** `https://github.com/texport/superkassa-receipt-renderer.git`
+*   **Version:** `1.0.4`
+*   **Target:** `SuperkassaReceiptRenderer`
 
 ---
 
@@ -190,7 +210,7 @@ import kz.mybrain.superkassa.core.domain.model.*
 // 1. Инициализация рендерера с адаптером QR-кодов
 val renderer = ReceiptHtmlRenderer(
     qrCodeGenerator = myQrCodeGeneratorImpl,
-    ofdProviders = ReceiptHtmlRenderer.defaultOfdProviders // реестр провайдеров
+    ofdProviders = myOfdProvidersMap // карта конфигураций провайдеров ОФД
 )
 
 // 2. Подготовка настроек брендирования ККМ

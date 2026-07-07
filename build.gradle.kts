@@ -1,17 +1,20 @@
 import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
-import java.io.File
-import java.io.FileInputStream
 import java.security.MessageDigest
-import java.util.zip.ZipEntry
+import java.io.FileInputStream
+import java.io.File
 import java.util.zip.ZipOutputStream
+import java.util.zip.ZipEntry
+import kotlinx.kover.gradle.plugin.dsl.CoverageUnit
 
 plugins {
-    alias(libs.plugins.detekt)
-    alias(libs.plugins.nmcp)
     alias(libs.plugins.kotlin.multiplatform)
+    alias(libs.plugins.android.kotlin.multiplatform.library)
+    alias(libs.plugins.detekt)
+    alias(libs.plugins.kover)
+    alias(libs.plugins.nmcp)
+    alias(libs.plugins.nmcp.aggregation)
     `maven-publish`
     signing
-    jacoco
 }
 
 group = "io.github.texport"
@@ -19,34 +22,66 @@ version = "1.0.4"
 
 repositories {
     mavenLocal()
+    google()
     mavenCentral()
+}
+
+dependencies {
+    detektPlugins(libs.detekt.formatting)
+    add("nmcpAggregation", dependencies.project(mapOf("path" to ":")))
+}
+
+detekt {
+    config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
+    buildUponDefaultConfig = true
+    allRules = true
+    autoCorrect = true
+    source.setFrom(files(
+        "src/commonMain/kotlin",
+        "src/jvmMain/kotlin",
+        "src/androidMain/kotlin",
+        "src/iosMain/kotlin"
+    ))
+}
+
+kover {
+    reports {
+        verify {
+            rule {
+                bound {
+                    coverageUnits = CoverageUnit.INSTRUCTION
+                    minValue = 90
+                }
+                bound {
+                    coverageUnits = CoverageUnit.BRANCH
+                    minValue = 80
+                }
+                bound {
+                    coverageUnits = CoverageUnit.LINE
+                    minValue = 98
+                }
+            }
+        }
+    }
 }
 
 kotlin {
     jvm()
+    android {
+        namespace = "kz.mybrain.superkassa.receipt_renderer"
+        compileSdk = libs.versions.androidCompileSdk.get().toInt()
+        minSdk = libs.versions.androidMinSdk.get().toInt()
+
+        withHostTest {}
+    }
     
     val xcf = XCFramework("SuperkassaReceiptRenderer")
-
-    iosArm64 {
-        binaries.framework {
+    listOf(iosArm64(), iosX64(), iosSimulatorArm64()).forEach { target ->
+        target.binaries.framework {
             baseName = "SuperkassaReceiptRenderer"
             xcf.add(this)
         }
     }
-    iosX64 {
-        binaries.framework {
-            baseName = "SuperkassaReceiptRenderer"
-            xcf.add(this)
-        }
-    }
-    iosSimulatorArm64 {
-        binaries.framework {
-            baseName = "SuperkassaReceiptRenderer"
-            xcf.add(this)
-        }
-    }
-
-    jvmToolchain(libs.versions.java.get().toInt())
 
     sourceSets {
         commonMain {
@@ -63,7 +98,7 @@ kotlin {
                 implementation(libs.zxing.javase)
             }
         }
-        jvmTest {
+        commonTest {
             dependencies {
                 implementation(kotlin("test"))
                 implementation(libs.mockk)
@@ -71,13 +106,18 @@ kotlin {
         }
     }
 
-    targets.all {
-        compilations.all {
-            compileTaskProvider.configure {
-                compilerOptions {
-                    freeCompilerArgs.add("-Xexpect-actual-classes")
-                }
-            }
+    jvmToolchain(libs.versions.javaTargetCore.get().toInt())
+}
+
+tasks.withType<Test>().configureEach {
+    useJUnitPlatform()
+}
+
+tasks.withType<Javadoc>().configureEach {
+    options {
+        encoding = "UTF-8"
+        if (this is StandardJavadocDocletOptions) {
+            addStringOption("Xdoclint:none", "-quiet")
         }
     }
 }
@@ -94,14 +134,14 @@ publishing {
             name.set("superkassa-receipt-renderer")
             description.set("HTML/text receipt rendering engine for Superkassa")
             url.set("https://github.com/texport/superkassa-receipt-renderer")
-
+            
             licenses {
                 license {
                     name.set("The Apache License, Version 2.0")
                     url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
                 }
             }
-
+            
             developers {
                 developer {
                     id.set("sergeyivanov")
@@ -109,7 +149,7 @@ publishing {
                     email.set("ivanov.sergey.ekb@gmail.com")
                 }
             }
-
+            
             scm {
                 connection.set("scm:git:git://github.com/texport/superkassa-receipt-renderer.git")
                 developerConnection.set("scm:git:ssh://github.com/texport/superkassa-receipt-renderer.git")
@@ -120,6 +160,7 @@ publishing {
 }
 
 signing {
+    isRequired = false
     val signingKey = System.getenv("SIGNING_KEY")
     val signingPassword = System.getenv("SIGNING_PASSWORD")
     if (!signingKey.isNullOrEmpty() && !signingPassword.isNullOrEmpty()) {
@@ -128,62 +169,22 @@ signing {
     sign(publishing.publications)
 }
 
-nmcp {
-    publishAllPublicationsToCentralPortal {
+nmcpAggregation {
+    centralPortal {
         username.set(project.findProperty("ossrhUsername")?.toString() ?: System.getenv("OSSRH_USERNAME"))
         password.set(project.findProperty("ossrhPassword")?.toString() ?: System.getenv("OSSRH_PASSWORD"))
-        publishingType.set("AUTOMATIC")
+        publishingType.set("USER_MANAGED")
     }
 }
 
-jacoco {
-    toolVersion = "0.8.12"
-}
-
-val jacocoTestReport = tasks.register<JacocoReport>("jacocoTestReport") {
-    description = "Generates Jacoco code coverage report for the JVM target."
-    dependsOn(tasks.named("jvmTest"))
-    classDirectories.setFrom(files(tasks.named("compileKotlinJvm")))
-    sourceDirectories.setFrom(files("src/commonMain/kotlin", "src/jvmMain/kotlin"))
-    executionData.setFrom(files(layout.buildDirectory.file("jacoco/jvmTest.exec")))
-    reports {
-        xml.required.set(true)
-        html.required.set(true)
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask<*>>().configureEach {
+    compilerOptions {
+        freeCompilerArgs.add("-Xexpect-actual-classes")
     }
 }
 
-val jacocoTestCoverageVerification = tasks.register<JacocoCoverageVerification>("jacocoTestCoverageVerification") {
-    description = "Verifies code coverage metrics against thresholds."
-    dependsOn(jacocoTestReport)
-    executionData.setFrom(files(layout.buildDirectory.file("jacoco/jvmTest.exec")))
-    classDirectories.setFrom(files(tasks.named("compileKotlinJvm")))
-    violationRules {
-        rule {
-            limit {
-                minimum = "0.93".toBigDecimal()
-            }
-        }
-    }
-}
-
-tasks.check {
-    dependsOn(jacocoTestCoverageVerification)
-}
-
-detekt {
-    config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
-    buildUponDefaultConfig = true
-    allRules = true
-    autoCorrect = true
-    source.setFrom(files("src/commonMain/kotlin", "src/jvmMain/kotlin", "src/iosMain/kotlin"))
-}
-
-tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
-    exclude("**/build/generated/**")
-}
-
-dependencies {
-    detektPlugins(libs.detekt.formatting)
+tasks.named("check") {
+    dependsOn("koverVerify")
 }
 
 tasks.register("generateSpmManifest") {
@@ -191,11 +192,13 @@ tasks.register("generateSpmManifest") {
     description = "Zips SuperkassaReceiptRenderer XCFramework, calculates SHA-256 and writes Package.swift"
     dependsOn("assembleSuperkassaReceiptRendererReleaseXCFramework")
 
+    val versionStr = project.version.toString()
+    val outputDir = layout.buildDirectory.dir("XCFrameworks/release").get().asFile
+    val packageSwiftFile = rootProject.file("Package.swift")
+
     doLast {
-        val versionStr = project.version.toString()
         val repoUrl = "https://github.com/texport/superkassa-receipt-renderer"
         val zipName = "SuperkassaReceiptRenderer.xcframework.zip"
-        val outputDir = layout.buildDirectory.dir("XCFrameworks/release").get().asFile
         val xcframeworkDir = File(outputDir, "SuperkassaReceiptRenderer.xcframework")
         val zipFile = File(outputDir, zipName)
 
@@ -207,16 +210,20 @@ tasks.register("generateSpmManifest") {
         println("Zipping XCFramework to ${zipFile.absolutePath}...")
         zipFile.delete()
         ZipOutputStream(zipFile.outputStream().buffered()).use { zos ->
-            xcframeworkDir.walkTopDown().forEach { file ->
-                if (file.isFile) {
-                    val relativePath = file.relativeTo(xcframeworkDir.parentFile).path
-                    zos.putNextEntry(ZipEntry(relativePath))
+            xcframeworkDir.walkTopDown()
+                .filter { it.isFile }
+                .sortedBy { it.relativeTo(xcframeworkDir.parentFile).invariantSeparatorsPath }
+                .forEach { file ->
+                    val relativePath = file.relativeTo(xcframeworkDir.parentFile).invariantSeparatorsPath
+                    val entry = ZipEntry(relativePath).apply {
+                        time = 0L
+                    }
+                    zos.putNextEntry(entry)
                     file.inputStream().buffered().use { input ->
                         input.copyTo(zos)
                     }
                     zos.closeEntry()
                 }
-            }
         }
 
         // 2. Compute SHA-256
@@ -235,7 +242,6 @@ tasks.register("generateSpmManifest") {
         println("SHA-256: $checksum")
 
         // 3. Write Package.swift
-        val packageSwiftFile = rootProject.file("Package.swift")
         println("Writing Package.swift to ${packageSwiftFile.absolutePath}...")
         packageSwiftFile.writeText(
             """

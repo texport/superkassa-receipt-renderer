@@ -13,3 +13,7 @@ local.properties
 
 # Kotlin
 .kotlin/
+
+# Codex Rules
+AGENTS.md
+.agents/

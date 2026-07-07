@@ -5,6 +5,8 @@ import kz.mybrain.superkassa.core.domain.model.receipt.*
 
 import kz.mybrain.superkassa.core.data.receipt.renderer.base.BaseDocumentRenderer
 
+import kz.mybrain.superkassa.core.data.receipt.renderer.base.StandardDocumentInput
+
 class CashOperationRenderer : BaseDocumentRenderer() {
 
     fun render(doc: FiscalDocumentSnapshot, kkm: KkmInfo): String {
@@ -27,14 +29,16 @@ class CashOperationRenderer : BaseDocumentRenderer() {
         """.trimIndent()
 
         return renderStandardDocument(
-            titleKey = key,
-            kkm = kkm,
-            createdAt = doc.createdAt,
-            shiftNo = doc.shiftNo,
-            docNo = doc.docNo?.toString() ?: doc.id,
-            ofdStatus = doc.ofdStatus,
-            isFiscal = false,
-            bodyContent = bodyContent
+            StandardDocumentInput(
+                titleKey = key,
+                kkm = kkm,
+                createdAt = doc.createdAt,
+                shiftNo = doc.shiftNo,
+                docNo = doc.docNo?.toString() ?: doc.id,
+                ofdStatus = doc.ofdStatus,
+                isFiscal = false,
+                bodyContent = bodyContent
+            )
         )
     }
 }

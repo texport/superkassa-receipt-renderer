@@ -17,12 +17,26 @@ import kz.mybrain.superkassa.core.domain.model.common.*
 import kz.mybrain.superkassa.core.domain.model.receipt.*
 import kz.mybrain.superkassa.core.domain.port.QrCodeGeneratorPort
 import kz.mybrain.superkassa.core.data.receipt.renderer.base.MetadataBuilder
+import kz.mybrain.superkassa.core.data.receipt.renderer.base.StandardDocumentInput
 
+/**
+ * Рендерер фискальных чеков продаж/возвратов.
+ *
+ * @property qrCodeGenerator генератор QR-кодов для чеков
+ * @property ofdProviders список доступных провайдеров ОФД
+ */
 class SaleReceiptRenderer(
-    private val qrCodeGenerator: QrCodeGeneratorPort,
-    private val ofdProviders: Map<String, OfdProviderConfig> = emptyMap()
+    private val qrCodeGenerator: QrCodeGeneratorPort
 ) : BaseDocumentRenderer() {
 
+    /**
+     * Формирует HTML-представление фискального чека.
+     *
+     * @param receipt запрос на чек
+     * @param doc фискальный документ
+     * @param kkm информация о ККМ
+     * @return HTML-строка отрендеренного чека
+     */
     fun render(receipt: ReceiptRequest, doc: FiscalDocumentSnapshot, kkm: KkmInfo): String {
         val lang = kkm.branding.language
         fun t(key: String): String = translate(key, lang)
@@ -32,7 +46,7 @@ class SaleReceiptRenderer(
         val totalStr = receipt.total.formatted()
         val opTitleKey = operationTitleKey(receipt.operation)
 
-        val receiptUrl = doc.receiptUrl?.trim()?.takeIf { it.isNotEmpty() } ?: buildFallbackReceiptUrl(receipt, doc)
+        val receiptUrl = doc.receiptUrl?.trim()?.takeIf { it.isNotEmpty() }
         val qrDataUri = receiptUrl?.let { qrCodeGenerator.generatePngDataUri(it, DocumentConstants.QR_CODE_SIZE_PX) }
 
         val itemsSumCents = receipt.items.sumOf { ReceiptFormatter.moneyToCents(it.sum) }
@@ -70,10 +84,7 @@ class SaleReceiptRenderer(
             t = { t(it) }
         )
 
-        val providerConfig = doc.ofdProvider?.uppercase()?.let { ofdProviders[it] }
-        val ofdProviderName = providerConfig?.let {
-            translate(it.nameRu, it.nameKk, lang)
-        } ?: (doc.ofdProvider ?: "-").escaped()
+        val ofdProviderName = (doc.ofdProvider ?: "-").escaped()
 
         val additionalMeta = MetadataBuilder { translateInlineKey(it) }.apply {
             add("buyer_bin_iin", receipt.customerBin)
@@ -127,21 +138,23 @@ class SaleReceiptRenderer(
         """.trimIndent()
 
         return renderStandardDocument(
-            titleKey = opTitleKey,
-            kkm = kkm,
-            createdAt = doc.createdAt,
-            shiftNo = doc.shiftNo,
-            docNo = doc.docNo?.toString() ?: doc.id,
-            ofdStatus = doc.ofdStatus,
-            isFiscal = true,
-            isAutonomous = doc.isAutonomous,
-            fiscalSign = sign,
-            ofdProvider = ofdProviderName,
-            receiptUrl = receiptUrl,
-            qrDataUri = qrDataUri,
-            additionalMeta = additionalMeta,
-            docCss = TicketStyles.TICKET_CSS,
-            bodyContent = bodyContent
+            StandardDocumentInput(
+                titleKey = opTitleKey,
+                kkm = kkm,
+                createdAt = doc.createdAt,
+                shiftNo = doc.shiftNo,
+                docNo = doc.docNo?.toString() ?: doc.id,
+                ofdStatus = doc.ofdStatus,
+                isFiscal = true,
+                isAutonomous = doc.isAutonomous,
+                fiscalSign = sign,
+                ofdProvider = ofdProviderName,
+                receiptUrl = receiptUrl,
+                qrDataUri = qrDataUri,
+                additionalMeta = additionalMeta,
+                docCss = TicketStyles.TICKET_CSS,
+                bodyContent = bodyContent
+            )
         )
     }
 
@@ -156,19 +169,4 @@ class SaleReceiptRenderer(
     }
 
     private fun operationTitleKey(type: ReceiptOperationType): String = type.translationKey
-
-    private fun buildFallbackReceiptUrl(receipt: ReceiptRequest, doc: FiscalDocumentSnapshot): String? {
-        val iinBin = doc.taxpayerBin ?: return null
-        val regNum = doc.registrationNumber ?: return null
-        val docNo = doc.docNo ?: return null
-        val dateUnix = doc.createdAt / 1000L
-        val fiscalSign = doc.fiscalSign ?: doc.autonomousSign ?: return null
-        val sumCents = ReceiptFormatter.moneyToCents(receipt.total)
-        val rubles = sumCents / 100L
-        val kopecks = sumCents % 100L
-        val sumStr = "$rubles.${kopecks.toString().padStart(2, '0')}"
-        val providerConfig = doc.ofdProvider?.uppercase()?.let { ofdProviders[it] }
-        val domain = providerConfig?.checkDomain ?: return null
-        return "https://$domain/r/$docNo?r=$regNum&i=$iinBin&d=$dateUnix&s=$sumStr&f=$fiscalSign"
-    }
 }

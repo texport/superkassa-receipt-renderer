@@ -3,6 +3,7 @@ package kz.mybrain.superkassa.core.data.receipt.renderer.component.ticket
 import kz.mybrain.superkassa.core.data.receipt.renderer.base.formatted
 import kz.mybrain.superkassa.core.data.receipt.renderer.base.translationKey
 import kz.mybrain.superkassa.core.domain.model.receipt.TaxLine
+import kz.mybrain.superkassa.core.domain.model.common.VatGroup
 
 object TaxesSectionComponent {
     fun render(
@@ -12,6 +13,7 @@ object TaxesSectionComponent {
         if (ticketTaxes.isEmpty()) return ""
         val taxesHtml = ticketTaxes.joinToString("") { line ->
             val label = t(line.vatGroup.translationKey)
+            val turnoverKey = if (line.vatGroup == VatGroup.NO_VAT) "non_taxable_turnover" else "taxable_turnover"
             kz.mybrain.superkassa.core.data.receipt.renderer.component.common.CardComponent.render(
                 title = label,
                 rows = listOf(
@@ -21,7 +23,7 @@ object TaxesSectionComponent {
                         valueClass = "tax-sum-cell num bold"
                     ),
                     kz.mybrain.superkassa.core.data.receipt.renderer.component.common.CardComponent.Row(
-                        label = t("taxable_turnover"),
+                        label = t(turnoverKey),
                         value = line.taxBase.formatted()
                     )
                 )
@@ -30,7 +32,7 @@ object TaxesSectionComponent {
         return """
         <div class="rule"></div>
         <div class="tax-section">
-            <div class="section-title center">${t("taxes")}</div>
+            <div class="section-title">${t("taxes")}</div>
             <div class="taxes-list">
                 $taxesHtml
             </div>
