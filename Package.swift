@@ -17,7 +17,7 @@ let package = Package(
         .binaryTarget(
             name: "SuperkassaReceiptRenderer",
             url: "https://github.com/texport/superkassa-receipt-renderer/releases/download/v1.0.4/SuperkassaReceiptRenderer.xcframework.zip",
-            checksum: "758a05cb022d802617f595d688a5cb8067aa3e12760920d91055ee78a809bd50"
+            checksum: "815d464aa211a897f185324e85500afa0b24df26af7b51dab50fe7853facc4b5"
         )
     ]
 )
