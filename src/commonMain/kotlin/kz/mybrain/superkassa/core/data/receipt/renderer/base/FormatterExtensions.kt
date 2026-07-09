@@ -10,3 +10,7 @@ fun Money.formatted(): String {
 fun String.escaped(): String {
     return ReceiptFormatter.escape(this)
 }
+
+fun Long.formatQuantity(): String {
+    return ReceiptFormatter.formatQuantity(this)
+}

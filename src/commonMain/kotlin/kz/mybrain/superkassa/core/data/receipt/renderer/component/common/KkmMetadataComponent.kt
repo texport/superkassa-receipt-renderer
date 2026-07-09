@@ -25,20 +25,20 @@ object KkmMetadataComponent {
         val factNo = kkm.factoryNumber ?: "-"
 
         val docNoRow = if (docNo != null) {
-            "<tr><td>$docNoLabel</td><td>$docNo</td></tr>"
+            "<tr><td>$docNoLabel</td><td style=\"word-break: break-all; white-space: normal;\">$docNo</td></tr>"
         } else {
             ""
         }
 
         val addMetaRows = additionalMeta.joinToString("") { (k, v) ->
-            "<tr><td>$k</td><td>$v</td></tr>"
+            "<tr><td>$k</td><td style=\"word-break: break-all; white-space: normal;\">$v</td></tr>"
         }
 
         return """
             <fieldset class="section-card">
                 <legend class="card-label">$kkmInfoLabel</legend>
                 <table class="meta-table" style="margin-top: 4px;">
-                    <tr><td>$kkmIdLabel</td><td>${kkm.id.escaped()}</td></tr>
+                    <tr><td>$kkmIdLabel</td><td style="word-break: break-all; white-space: normal;">${kkm.id.escaped()}</td></tr>
                     <tr><td>$rnmLabel</td><td>${regNo.escaped()}</td></tr>
                     <tr><td>$znmLabel</td><td>${factNo.escaped()}</td></tr>
                     <tr><td>$shiftNoLabel</td><td>${shiftNo ?: "-"}</td></tr>

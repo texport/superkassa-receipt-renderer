@@ -18,7 +18,7 @@ object ReportPaymentsComponent {
                 val formattedSum = formatAmount(pay.sumBills)
                 """
                 <tr>
-                    <td class="tax-details-cell" style="padding-left: 8px;">&bull; $payLabel (${pay.count})</td>
+                    <td class="tax-details-cell" style="padding-left: 8px;">&#8226; $payLabel (${pay.count})</td>
                     <td class="tax-sum-cell" style="font-size: 0.95em; color: var(--m3-on-surface-variant); font-weight: normal;">$formattedSum</td>
                 </tr>
                 """.trimIndent()

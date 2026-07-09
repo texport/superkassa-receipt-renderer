@@ -214,6 +214,20 @@ abstract class BaseDocumentRenderer {
             translateInlineKey = { translateInline(it, lang) }
         )
 
+        val ofdAdsHtml = if (kkm.branding.printOfdTicketAds && kkm.branding.ofdTicketAds.isNotEmpty()) {
+            val adsList = kkm.branding.ofdTicketAds.joinToString("\n") {
+                "<div class=\"ofd-ad-item\">${it.escaped()}</div>"
+            }
+            """
+            <div class="ofd-ads center muted" style="font-size: 0.85em; color: var(--m3-on-surface-variant); line-height: 1.4; padding: 4px 0; margin-top: 8px;">
+                $adsList
+            </div>
+            <div class="rule"></div>
+            """.trimIndent()
+        } else {
+            ""
+        }
+
         val footerHtml = kz.mybrain.superkassa.core.data.receipt.renderer.component.common.FooterComponent.render(
             kkm = kkm,
             titleKey = input.titleKey,
@@ -228,6 +242,7 @@ abstract class BaseDocumentRenderer {
             ${input.bodyContent}
             $fiscalSectionHtml
             <div class="rule"></div>
+            $ofdAdsHtml
             $footerHtml
         """.trimIndent()
 

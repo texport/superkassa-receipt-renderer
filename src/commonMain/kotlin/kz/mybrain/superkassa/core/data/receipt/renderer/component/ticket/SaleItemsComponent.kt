@@ -5,6 +5,7 @@ import kz.mybrain.superkassa.core.domain.model.receipt.*
 
 import kz.mybrain.superkassa.core.data.receipt.renderer.base.escaped
 import kz.mybrain.superkassa.core.data.receipt.renderer.base.formatted
+import kz.mybrain.superkassa.core.data.receipt.renderer.base.formatQuantity
 import kz.mybrain.superkassa.core.data.receipt.renderer.base.translationKey
 
 object SaleItemsComponent {
@@ -66,7 +67,7 @@ object SaleItemsComponent {
                     </tr>
                     <tr>
                         <td class="item-details-cell" colspan="2">
-                            ${item.quantity} $unitStr × $priceStr
+                            ${item.quantity.formatQuantity()} $unitStr × $priceStr
                             $exciseHtml
                             $vatHtml
                             $discountHtml

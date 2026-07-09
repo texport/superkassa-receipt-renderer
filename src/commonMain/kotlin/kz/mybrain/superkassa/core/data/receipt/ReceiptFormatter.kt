@@ -73,4 +73,28 @@ object ReceiptFormatter {
             .replace("<", "&lt;")
             .replace(">", "&gt;")
             .replace("\"", "&quot;")
+
+    /**
+     * Форматирует количество товара (переданное в тысячных долях) в читаемый вид.
+     * Например:
+     * 1000 -> "1"
+     * 2500 -> "2.5"
+     * 2005 -> "2.005"
+     */
+    fun formatQuantity(quantityThousandths: Long): String {
+        val qtyDouble = quantityThousandths / 1000.0
+        if (quantityThousandths % 1000L == 0L) {
+            return (quantityThousandths / 1000L).toString()
+        }
+        var str = qtyDouble.toString()
+        if (str.contains('.')) {
+            while (str.endsWith('0')) {
+                str = str.substring(0, str.length - 1)
+            }
+            if (str.endsWith('.')) {
+                str = str.substring(0, str.length - 1)
+            }
+        }
+        return str
+    }
 }

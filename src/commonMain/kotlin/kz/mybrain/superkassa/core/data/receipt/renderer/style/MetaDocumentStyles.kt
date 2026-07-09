@@ -44,12 +44,12 @@ object MetaDocumentStyles {
 
         .tax-row-card {
             display: block;
-            margin-inline-start: 0;
-            margin-inline-end: 0;
-            padding-block-start: 12px;
-            padding-block-end: 8px;
-            padding-inline-start: 12px;
-            padding-inline-end: 12px;
+            margin-left: 0;
+            margin-right: 0;
+            padding-top: 12px;
+            padding-bottom: 8px;
+            padding-left: 12px;
+            padding-right: 12px;
             background: #ffffff;
             background: var(--m3-surface);
             border: 1px solid #e2e8f0;
@@ -67,12 +67,12 @@ object MetaDocumentStyles {
         .tax-row-card.dashed { border-style: dashed; }
         .section-card {
             display: block;
-            margin-inline-start: 0;
-            margin-inline-end: 0;
-            padding-block-start: 12px;
-            padding-block-end: 8px;
-            padding-inline-start: 12px;
-            padding-inline-end: 12px;
+            margin-left: 0;
+            margin-right: 0;
+            padding-top: 12px;
+            padding-bottom: 8px;
+            padding-left: 12px;
+            padding-right: 12px;
             background: #ffffff;
             background: var(--m3-surface);
             border: 1px solid #e2e8f0;
