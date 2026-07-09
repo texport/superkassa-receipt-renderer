@@ -763,12 +763,12 @@ td.num { white-space: nowrap; font-weight: 500; }
 
 .tax-row-card {
     display: block;
-    margin-inline-start: 0;
-    margin-inline-end: 0;
-    padding-block-start: 12px;
-    padding-block-end: 8px;
-    padding-inline-start: 12px;
-    padding-inline-end: 12px;
+    margin-left: 0;
+    margin-right: 0;
+    padding-top: 12px;
+    padding-bottom: 8px;
+    padding-left: 12px;
+    padding-right: 12px;
     background: #ffffff;
     background: var(--m3-surface);
     border: 1px solid #e2e8f0;
@@ -786,12 +786,12 @@ td.num { white-space: nowrap; font-weight: 500; }
 .tax-row-card.dashed { border-style: dashed; }
 .section-card {
     display: block;
-    margin-inline-start: 0;
-    margin-inline-end: 0;
-    padding-block-start: 12px;
-    padding-block-end: 8px;
-    padding-inline-start: 12px;
-    padding-inline-end: 12px;
+    margin-left: 0;
+    margin-right: 0;
+    padding-top: 12px;
+    padding-bottom: 8px;
+    padding-left: 12px;
+    padding-right: 12px;
     background: #ffffff;
     background: var(--m3-surface);
     border: 1px solid #e2e8f0;
@@ -887,13 +887,13 @@ body { background-color: #1e1d20; }
             <fieldset class="section-card">
     <legend class="card-label">БАҚ туралы ақпарат / Информация о ККМ</legend>
     <table class="meta-table" style="margin-top: 4px;">
-        <tr><td>БАҚ ID / ККМ ID</td><td>kkm-123</td></tr>
+        <tr><td>БАҚ ID / ККМ ID</td><td style="word-break: break-all; white-space: normal;">kkm-123</td></tr>
         <tr><td>ТНМ / РНМ</td><td>RN-999888777</td></tr>
         <tr><td>МЗН / ЗНМ</td><td>FN-777666</td></tr>
         <tr><td>Ауысым № / Смена №</td><td>5</td></tr>
-        <tr><td>Құжат № / Документ №</td><td>999</td></tr>
+        <tr><td>Құжат № / Документ №</td><td style="word-break: break-all; white-space: normal;">999</td></tr>
         <tr><td>Күні мен уақыты / Дата и время</td><td>23.06.2026 14:33:20</td></tr>
-        <tr><td>Сатып алушы БСН/ЖСН: / Покупатель БИН/ИИН:</td><td>123456789012</td></tr>
+        <tr><td>Сатып алушы БСН/ЖСН: / Покупатель БИН/ИИН:</td><td style="word-break: break-all; white-space: normal;">123456789012</td></tr>
     </table>
 </fieldset>
             <div class="rule"></div>
@@ -914,7 +914,7 @@ body { background-color: #1e1d20; }
         </tr>
         <tr>
             <td class="item-details-cell" colspan="2">
-                1 дана / шт × 1000.00
+                0.001 дана / шт × 1000.00
                 
                 <div class="item-vat"><span class="lang-fraction"><span class="lang-fraction-top">ҚҚС-сыз</span><span class="lang-fraction-bottom">Без НДС</span></span></div>
                 
@@ -930,7 +930,7 @@ body { background-color: #1e1d20; }
         </tr>
         <tr>
             <td class="item-details-cell" colspan="2">
-                2 л × 2000.00
+                0.002 л × 2000.00
                 <div class="excise-stamps"><span class="lang-fraction"><span class="lang-fraction-top">Таңбалау:</span><span class="lang-fraction-bottom">Маркировка:</span></span> ExciseStamp1234567890</div>
                 <div class="item-vat"><span class="lang-fraction"><span class="lang-fraction-top">ҚҚС 0%</span><span class="lang-fraction-bottom">НДС 0%</span></span></div>
                 
@@ -946,7 +946,7 @@ body { background-color: #1e1d20; }
         </tr>
         <tr>
             <td class="item-details-cell" colspan="2">
-                1 дана / шт × 3000.00
+                0.001 дана / шт × 3000.00
                 
                 <div class="item-vat"><span class="lang-fraction"><span class="lang-fraction-top">ҚҚС 5%</span><span class="lang-fraction-bottom">НДС 5%</span></span></div>
                 
@@ -962,7 +962,7 @@ body { background-color: #1e1d20; }
         </tr>
         <tr>
             <td class="item-details-cell" colspan="2">
-                1 дана / шт × 4000.00
+                0.001 дана / шт × 4000.00
                 
                 <div class="item-vat"><span class="lang-fraction"><span class="lang-fraction-top">ҚҚС 10%</span><span class="lang-fraction-bottom">НДС 10%</span></span></div>
                 
@@ -978,7 +978,7 @@ body { background-color: #1e1d20; }
         </tr>
         <tr>
             <td class="item-details-cell" colspan="2">
-                3 дана / шт × 5000.00
+                0.003 дана / шт × 5000.00
                 <div class="excise-stamps"><span class="lang-fraction"><span class="lang-fraction-top">Таңбалау:</span><span class="lang-fraction-bottom">Маркировка:</span></span> ExciseStampA, ExciseStampB</div>
                 <div class="item-vat"><span class="lang-fraction"><span class="lang-fraction-top">ҚҚС 16%</span><span class="lang-fraction-bottom">НДС 16%</span></span></div>
                 
@@ -1068,6 +1068,7 @@ body { background-color: #1e1d20; }
     <div style="font-size: 0.85em; color: var(--m3-on-surface-variant); margin-top: 6px; text-transform: uppercase;">Тексеру үшін сканерлеңіз / Сканируйте для проверки</div>
 </div>
             <div class="rule"></div>
+            
             <div class="footer center">
     
     <div class="footer-item muted">Құжаттың баспа түрі. / Печатная форма документа.</div>

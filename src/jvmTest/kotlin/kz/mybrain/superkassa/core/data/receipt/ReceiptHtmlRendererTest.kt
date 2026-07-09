@@ -1497,7 +1497,7 @@ class ReceiptHtmlRendererTest {
         var result = html
         result = result.replace(Regex("""<span\s+class="lang-fraction">\s*<span\s+class="lang-fraction-top">([\s\S]*?)</span>\s*<span\s+class="lang-fraction-bottom">([\s\S]*?)</span>\s*</span>"""), "$1 / $2")
         result = result.replace(Regex("""<span\s+class="badge\s+[^"]*">\s*<span\s+class="badge-main">([\s\S]*?)</span>\s*<span\s+class="badge-divider"></span>\s*<span\s+class="badge-sub">([\s\S]*?)</span>\s*</span>"""), "$1 / $2")
-        result = result.replace(Regex("""</td>\s*<td>"""), " ")
+        result = result.replace(Regex("""</td>\s*<td[^>]*>"""), " ")
         return result.replace(Regex("<[^>]*>"), "")
     }
 }
